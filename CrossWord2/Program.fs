@@ -61,8 +61,6 @@ let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
 
-
-
 type Word_state2 = { word: string; letter_position: int; candidate_Coordinates: seq<Coordinate> option }
 type Word_state3 = { word: string; letter_position: int; can_add_word_here: Coordinate option}
 type failed_list = seq<string>
@@ -129,10 +127,9 @@ seed_the_dictionaries source_words_2
 let returns_matching_letters_on_the_grid (source_words:string list) : seq<Word_state2> =
 
     seq {
-
         for word in source_words do
             let wordAsArray = word.ToCharArray()
-            for i = 0 to wordAsArray.Length do
+            for i = 0 to wordAsArray.Length - 1 do
                     let found, res1 = letters.TryGetValue word.[i]
                     match found with
                     | true -> let res2 = Seq.ofList res1
@@ -146,9 +143,9 @@ let isCellEmpty (coordinate:Coordinate) =
 
     let found, res = coordinatesDict.TryGetValue coordinate
 
-    found
+    not found
 
-let isCellAvailiable (c:char) (coordinate:Coordinate) (matchType:MatchType) = 
+let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) = 
 
      let found, res = coordinatesDict.TryGetValue coordinate
 
@@ -167,60 +164,62 @@ let directionForWordToBePlaced (coordinate:Coordinate) =
 
      match found with
      | true ->  match (res.Down , res.Up) with
-                | Some x , None   -> Some(x)
-                | None   , Some x -> Some(x)
+                | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
+                | None   , Some x -> Some(DOWN)
                 | _               -> None
-     | false ->
+     | false -> None // should not get here. This subroutine only called when a dictionary key found.
 
-let moveToCoordinate start cellCountToMoveAndDirection lineOfTheWord directionOfMovement =
+let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
 
-    match cellCountToMoveAndDirection with
+    match cellCountToMove with
     | 0 -> []
     | _ ->  match (lineOfTheWord , directionOfMovement) with
-            | ACROSS , ToStart -> [ for i in 1 .. cellCountToMoveAndDirection -> { start with X = start.X - i}] |> List.rev
-            | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMoveAndDirection -> { start with X = start.X + i}]
-            | DOWN   , ToStart -> [ for i in 1 .. cellCountToMoveAndDirection -> { start with Y = start.Y + i}] |> List.rev
-            | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMoveAndDirection -> { start with Y = start.Y - i}] 
-
-
-
+            | ACROSS , ToStart -> [ for i in 1 .. cellCountToMove -> { start with X = start.X - i}] |> List.rev
+            | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
+            | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
+            | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
 
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWord:Direction) (gridCoordinate:Coordinate) =
 
     // Note using position not offset in the movement calculations
+    let positionOfIntersectingLetter = offsetOfIntersectingLetter + 1
 
-    let lengthOfTheWord = word.Length
-    let positionOfIntersectingLetter = offsetOfIntersectingLetter + 1 
+    let NumberOflettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
+    let NumberOflettersAfterTheIntersectionLetter = word.Length - positionOfIntersectingLetter
 
-    let lettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
-    let lettersAfterTheIntersectionLetter = lengthOfTheWord - positionOfIntersectingLetter
-
-
-    let coordinateAdjacentToStartLetter         = (moveToCoordinate gridCoordinate (lettersBeforeTheIntersectionLetter + 1)        lineOfTheWord ToStart ).Head
-    let coordinateAdjacentToEndLetter           = (moveToCoordinate gridCoordinate (-1 * (lettersAfterTheIntersectionLetter  + 1)) lineOfTheWord ToEnd ).Head
-
-    let coordinatesStartUpToIntersectingLetter        = moveToCoordinate gridCoordinate (lettersBeforeTheIntersectionLetter) lineOfTheWord ToStart
-    let coordinatesStartUpToIntersectingLetterAndChar = [for i in 0 .. coordinatesStartUpToIntersectingLetter.Length - 1 -> (coordinatesStartUpToIntersectingLetter.[i] , word.[i]) ]
+    let coordinateAdjacentToStartLetter               = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord ToStart ).Head
+    let coordinateAdjacentToEndLetter                 = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWord ToEnd   ).Head
 
 
-    let coordinatesAfterIntersectingToEndLetter = moveToCoordinate gridCoordinate (lettersAfterTheIntersectionLetter) lineOfTheWord ToEnd
-    let coordinatesAfterIntersectingToEndLetterAndChar = [for i in 0 .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[i]) ]
+    let coordinatesStartUpToIntersectingLetter        = moveToCoordinate gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWord ToStart
+    let coordinatesStartUpToIntersectingLetterAndChar = 
+        match coordinatesStartUpToIntersectingLetter with
+        | [] -> []
+        | _ ->  [for i in 0 .. coordinatesStartUpToIntersectingLetter.Length - 1 -> (coordinatesStartUpToIntersectingLetter.[i] , word.[i]) ]
 
-    if isCellEmpty coordinateAdjacentToStartLetter && 
-        isCellEmpty coordinateAdjacentToEndLetter && 
-        coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable c xy LetterOrEmpty) &&
-        coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable c xy LetterOrEmpty) && 
-        isCellAvailiable word.[offsetOfIntersectingLetter] gridCoordinate Letter then
-        true
+
+    let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWord ToEnd
+    let coordinatesAfterIntersectingToEndLetterAndChar =
+        match coordinatesAfterIntersectingToEndLetter with
+        | [] -> []
+        | _ ->  [for i in (offsetOfIntersectingLetter + 1)  .. word.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[i]) ]
+
+
+    if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&
+       isCellEmpty coordinateAdjacentToStartLetter && 
+       isCellEmpty coordinateAdjacentToEndLetter && 
+       coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) &&
+       coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) then
+       true
     else
-        false
+       false
   
 let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoordinate:Coordinate) =
 
     let availiableDirection = directionForWordToBePlaced gridCoordinate 
 
     match availiableDirection with
-    | Some x -> match isCellAvailiable word.[offsetOfIntersectingLetter] gridCoordinate Letter with     
+    | Some x -> match isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter with     
                 | true -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
                 | false -> false
     | None   -> false
@@ -293,8 +292,7 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
 
     let failed_list =
         source_words 
-        |> returns_seq_of_words_and_letters 
-        |> returns_seq_of_coordinates_for_the_letters 
+        |> returns_matching_letters_on_the_grid 
         |> return_status_of_candidate_coordinates 
         |> return_one_coordinate_for_one_word
         |> Update_dictionaries_output_failed_words
