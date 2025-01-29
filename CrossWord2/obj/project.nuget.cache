@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "UQzH43vbn9c=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\CrossWord2.fsproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mark.dawson\\.nuget\\packages\\fsharp.core\\9.0.100\\fsharp.core.9.0.100.nupkg.sha512"
+  ],
+  "logs": []
+}
