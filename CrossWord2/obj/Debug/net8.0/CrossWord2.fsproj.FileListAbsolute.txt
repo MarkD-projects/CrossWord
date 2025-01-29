@@ -27,3 +27,4 @@ C:\Users\mark.dawson\source\repos\CrossWord2\CrossWord2\obj\Debug\net8.0\refint\
 C:\Users\mark.dawson\source\repos\CrossWord2\CrossWord2\obj\Debug\net8.0\CrossWord2.pdb
 C:\Users\mark.dawson\source\repos\CrossWord2\CrossWord2\obj\Debug\net8.0\CrossWord2.genruntimeconfig.cache
 C:\Users\mark.dawson\source\repos\CrossWord2\CrossWord2\obj\Debug\net8.0\ref\CrossWord2.dll
+C:\Users\mark.dawson\source\repos\CrossWord2\CrossWord2\obj\Debug\net8.0\CrossWord2.sourcelink.json
