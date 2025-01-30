@@ -285,6 +285,9 @@ let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word
 
 let do_dict_updates word xy :unit = 
 
+    letters.Add('a', [{X=1;Y=2}])
+    coordinatesDict.Add({X=2;Y=0}    , { Letter='l'; Down=Some(Placed); Across=None})
+    
     //printfn ("word %A location %A") word xy
 
     ()

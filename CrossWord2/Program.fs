@@ -8,6 +8,7 @@ open System.Collections.Generic
 type MatchType =
 |Letter
 |LetterOrEmpty
+|Empty
 
 type Placed = { word:string; placed:bool}
 type Coordinate = { X: int; Y: int }
@@ -19,8 +20,6 @@ type Coordinate_status =
 type Overall_coordinates_status =
 | AtleastOneValid
 | NoneValid
-
-type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status }
 
 type Letter_status = Placed | Indirect
 type Direction = ACROSS | DOWN
@@ -60,12 +59,14 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
+type For_dictionary_update = {intersection_coordinate:Coordinate ; grid_coordinates_to_be_populated:(Coordinate*char) list ; new_word_direction:Direction}
+type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 
 type Word_state2 = { word: string; letter_position: int; candidate_Coordinates: seq<Coordinate> option }
-type Word_state3 = { word: string; letter_position: int; can_add_word_here: Coordinate option}
+type Word_state3 = { word: string; letter_position: int; can_add_word_here: Coordinate option; for_dictionary_update: For_dictionary_update option}
 type failed_list = seq<string>
 
-let seed_the_dictionaries (source_words_2: string list) =
+let update_the_letters_the_dictionary (source_words_2: string list) =
 
     let rec read_the_characters (x:int) (y:int) (position:int) (first_word:string) : unit =
 
@@ -84,7 +85,7 @@ let seed_the_dictionaries (source_words_2: string list) =
 
     read_the_characters 0 0 0 source_words_2.Head
 
-seed_the_dictionaries source_words_2
+update_the_letters_the_dictionary source_words_2
 
 //let printDictionary (dict: Dictionary<'Key, 'Value>) =
 //    for KeyValue(key, value) in dict do
@@ -149,14 +150,15 @@ let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) =
 
      let found, res = coordinatesDict.TryGetValue coordinate
 
-     match (matchType, found) with
-     | Letter , true        when res.Letter = c  -> true
-     | Letter , true        when res.Letter <> c -> false
-     | Letter , false                            -> false
-     | LetterOrEmpty , true when res.Letter = c  -> true
-     | LetterOrEmpty , true when res.Letter <> c -> false
-     | LetterOrEmpty , false                     -> true
-     | _                                         -> false
+     match (matchType , found) with
+     | Letter         , true  when res.Letter = c  -> true
+     | Letter         , true  when res.Letter <> c -> false
+     | Letter         , false                      -> false
+     | LetterOrEmpty  , true  when res.Letter = c  -> true
+     | LetterOrEmpty  , true  when res.Letter <> c -> false
+     | LetterOrEmpty  , false                      -> true
+     | Empty          , false                      -> true
+     | _                                           -> false
 
 let directionForWordToBePlaced (coordinate:Coordinate) =
 
@@ -178,6 +180,14 @@ let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
             | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
             | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
             | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
+
+let return_list_of_empty_grid_coordinates_to_be_populated (coordinates:(Coordinate*char) list) =
+
+    [ 
+      for xy , letter in coordinates do
+          if isCellAvailiable xy letter Empty then
+             yield xy , letter
+    ]
 
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
@@ -209,9 +219,14 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
        isCellEmpty coordinateAdjacentToEndLetter && 
        coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) &&
        coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) then
-       true
+
+       Some( {intersection_coordinate=gridCoordinate;
+              grid_coordinates_to_be_populated=return_list_of_empty_grid_coordinates_to_be_populated (coordinatesStartUpToIntersectingLetterAndChar@coordinatesAfterIntersectingToEndLetterAndChar);
+              new_word_direction=lineOfTheWordToBeAdded} )
+
     else
-       false
+
+       None
   
 let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoordinate:Coordinate) =
 
@@ -220,8 +235,8 @@ let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoord
     match availiableDirection with
     | Some x -> match isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter with     
                 | true -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
-                | false -> false
-    | None   -> false
+                | false -> None
+    | None   -> None
 
 let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinates:seq<Coordinate>) = 
 
@@ -235,35 +250,43 @@ let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinate
     let first_pass =
         coordinates |> 
         Seq.scan (fun state xy -> match areCellsAvailiable word offsetOfIntersectingLetter xy with
-                                  | true   -> {this_coordinate=Valid(xy)      ; overall_status=update_overall_status (Valid(xy)) state.overall_status }
-                                  | false  -> {this_coordinate=NotValid(xy)   ; overall_status=update_overall_status (NotValid(xy)) state.overall_status }
-                                                        ) {this_coordinate=NotValid({X=0;Y=0}); overall_status=NoneValid}
+                                  | Some x -> {this_coordinate=Valid(xy)      ; overall_status=update_overall_status (Valid(xy))    state.overall_status ; for_dictionary_update=Some x }
+                                  | None   -> {this_coordinate=NotValid(xy)   ; overall_status=update_overall_status (NotValid(xy)) state.overall_status ; for_dictionary_update=None }
+                                                        ) {this_coordinate=NotValid({X=0;Y=0}); overall_status=NoneValid; for_dictionary_update=None}
         |> Seq.skip 1 // initial state (NoneValid)
         |> Seq.cache
 
     let res = first_pass 
               |> Seq.last
-              |> fun state -> state.overall_status
               
-    seq { match res with
+    seq { match res.overall_status with
           | AtleastOneValid -> 
                 for state in first_pass do
                     match state.this_coordinate with
-                    | Valid xy  -> yield Some(xy)
+                    | Valid xy  -> yield Some(res)
                     | _         -> yield! Seq.empty
           | _ -> yield None }
 
 
 let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
 
+    let return_value x = 
+
+        match x with
+        | Valid xy -> xy
+        | NotValid xy -> xy
+
     seq {
         for coordinate_info in coordinates do
             match coordinate_info.candidate_Coordinates with
-            | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None }
+            | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
             | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
-                        for xy in here do // this will be many Valid(xy) or all None
+                        for location_info in here do // this will be many Valid(xy) or all None
                             //printfn ("yield %A %A %A") coordinate_info.word coordinate_info.letter_selected xy
-                            yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=xy }
+                            match location_info with
+                            | Some l -> let xy = return_value l.this_coordinate
+                                        yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=Some(xy); for_dictionary_update=l.for_dictionary_update }
+                            | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
         }
 
 let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word_state3>  =
@@ -271,7 +294,19 @@ let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word
     coordinates |>
     Seq.distinctBy (fun state -> state.word)
 
-let do_dict_updates word xy :unit = 
+let do_dict_updates (word:string) (letter_offset:int) (coordinate:Coordinate) =
+
+    for i in 0 .. word.Length - 1 do
+        if i <> letter_offset then
+           let found, res = letters.TryGetValue word.[i]
+           match found with
+           | true -> let new_value = res@[coordinate]
+                     letters.Item(word.[i]) <- new_value
+           | false ->
+                     letters.Add(word[i], [coordinate])
+
+
+    coordinatesDict.Add({X=2;Y=0}    , { Letter='l'; Down=Some(Placed); Across=None})
 
     //printfn ("word %A location %A") word xy
 
@@ -283,7 +318,7 @@ let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) 
         for c in valid_coordinate do
             //printfn ("%A %A %A") c.word c.letter_selected c.can_add_word_here
             match c.can_add_word_here with 
-            | Some(xy)    -> do_dict_updates c.word xy
+            | Some(xy)    -> do_dict_updates c.word c.letter_position xy
             | _           -> yield c.word
     }
 
