@@ -161,7 +161,7 @@ let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) =
 let directionForWordToBePlaced (coordinate:Coordinate) =
 
      let found, res = coordinatesDict.TryGetValue coordinate
-
+     printfn "%A %A" found res
      match found with
      | true ->  match (res.Down , res.Across) with
                 | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
@@ -202,7 +202,6 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
 
     let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWord ToEnd
-    printfn "coordinatesAfterIntersectingToEndLetter %A" coordinatesAfterIntersectingToEndLetter
     let coordinatesAfterIntersectingToEndLetterAndChar =
         match coordinatesAfterIntersectingToEndLetter with
         | [] -> []
@@ -429,6 +428,76 @@ let printBlock a b c d =
 
 
 
+
+//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
+
+//areCellsAvailiable "world" 0 {X=1;Y=2} // true
+//areCellsAvailiable "world" 1 {X=2;Y=2} // true
+
+//areCellsAvailiable "world" 2 {X=3;Y=2} // true
+//areCellsAvailiable "world" 3 {X=3;Y=2} // false
+
+//areCellsAvailiable "world" 4 {X=10;Y=2} //false
+//areCellsAvailiable "world" 4 {X=15;Y=2} // false
+
+// test 2 
+
+//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=3}   , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=4}   , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=5}   , { Letter='l'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=6}   , { Letter='d'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=7}   , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=8}   , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=9}   , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=10}  , { Letter='l'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=11}  , { Letter='d'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=(-3);Y=11}  , { Letter='x'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=1;Y=12}  , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=13}  , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=14}  , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=15}  , { Letter='l'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=1;Y=16}  , { Letter='d'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=(-3);Y=16}  , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=(-4);Y=16}  , { Letter='x'; Down=Some(Placed); Across=None})
+    
+//areCellsAvailiable "world" 0 {X=1;Y=2} // true
+//areCellsAvailiable "world" 1 {X=1;Y=3} // true
+//areCellsAvailiable "world" 2 {X=1;Y=4} // true
+//areCellsAvailiable "world" 3 {X=1;Y=5} // true
+
+//areCellsAvailiable "world" 4 {X=1;Y=6} // true
+//areCellsAvailiable "world" 3 {X=1;Y=6} // false
+
+//areCellsAvailiable "world" 4 {X=1;Y=11} // false
+//areCellsAvailiable "world" 4 {X=1;Y=16} // false
+
+//directionForWordToBePlaced {X=2;Y=2}
+//isCellAvailiable {X=2;Y=2} 'o' Letter
+
+//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 
 
 
