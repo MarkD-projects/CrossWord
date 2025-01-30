@@ -161,7 +161,7 @@ let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) =
 let directionForWordToBePlaced (coordinate:Coordinate) =
 
      let found, res = coordinatesDict.TryGetValue coordinate
-     printfn "%A %A" found res
+
      match found with
      | true ->  match (res.Down , res.Across) with
                 | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
@@ -188,8 +188,8 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let NumberOflettersAfterTheIntersectionLetter = word.Length - positionOfIntersectingLetter
 
     let coordinateAdjacentToStartLetter               = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord ToStart ).Head
-    printfn "coordinateAdjacentToStartLetter %A" coordinateAdjacentToStartLetter
-    printfn "%A %A %A" gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord
+    //printfn "coordinateAdjacentToStartLetter %A" coordinateAdjacentToStartLetter
+    //printfn "%A %A %A" gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord
 
     let coordinateAdjacentToEndLetter                 = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWord ToEnd   ).Head
 
@@ -206,15 +206,15 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
         match coordinatesAfterIntersectingToEndLetter with
         | [] -> []
         | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> 
-                               printfn "%A %A %A" i coordinatesAfterIntersectingToEndLetter.[i] word.[offsetOfIntersectingLetter + 1 + i]
+                               //printfn "%A %A %A" i coordinatesAfterIntersectingToEndLetter.[i] word.[offsetOfIntersectingLetter + 1 + i]
                                (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
 
 
-    printfn "1] %A %A %A" (isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter) gridCoordinate word.[offsetOfIntersectingLetter]
-    printfn "2] %A %A" (isCellEmpty coordinateAdjacentToStartLetter) coordinateAdjacentToStartLetter
-    printfn "3] %A %A" (isCellEmpty coordinateAdjacentToEndLetter) coordinateAdjacentToEndLetter
-    printfn "%A" (coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
-    printfn "%A" (coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
+    //printfn "1] %A %A %A" (isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter) gridCoordinate word.[offsetOfIntersectingLetter]
+    //printfn "2] %A %A" (isCellEmpty coordinateAdjacentToStartLetter) coordinateAdjacentToStartLetter
+    //printfn "3] %A %A" (isCellEmpty coordinateAdjacentToEndLetter) coordinateAdjacentToEndLetter
+    //printfn "%A" (coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
+    //printfn "%A" (coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
 
     if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&
        isCellEmpty coordinateAdjacentToStartLetter && 
@@ -501,4 +501,91 @@ let printBlock a b c d =
 
 
 
+
+//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
+
+//can_add_word_here "world" 0 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=10;Y=6} } )
+//can_add_word_here "world" 4 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=10;Y=6};{X=5;Y=2};{X=15;Y=2} } )
+
+
+coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=Some(Placed); Across=Some(Placed)})
+coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
+coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+
+coordinatesDict.Add({X=15;Y=6} , { Letter='w'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=15;Y=5} , { Letter='o'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=15;Y=4} , { Letter='r'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=15;Y=3} , { Letter='l'; Down=Some(Placed); Across=None})
+// coordinatesDict.Add({X=15;Y=2} , { Letter='d'; Down=Some(Placed); Across=None})
+
+coordinatesDict.Add({X=2;Y=3}    , { Letter='w'; Down=Some(Placed); Across=None})
+// coordinatesDict.Add({X=2;Y=2}    , { Letter='o'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=2;Y=1}    , { Letter='r'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=2;Y=0}    , { Letter='l'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=2;Y=(-1)} , { Letter='d'; Down=Some(Placed); Across=None})
+
+coordinatesDict.Add({X=6;Y=3}  , { Letter='x'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=6;Y=1}  , { Letter='x'; Down=Some(Placed); Across=None})
+coordinatesDict.Add({X=11;Y=0} , { Letter='x'; Down=None; Across=Some(Placed)})
+
+
+can_add_word_here "world" 0 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} } )
+|> Seq.iter(fun c -> printfn "%A" c)
+
+
+can_add_word_here "world" 1 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} } )
+|> Seq.iter(fun c -> printfn "%A" c)
+
+
+return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
+                                              { word="world"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
+                                              { word="world"; letter_position=2; candidate_Coordinates=None                                                           }
+                                            })
+|> Seq.iter(fun c -> printfn "%A" c)
+
+return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
+                                              { word="world"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
+                                              { word="world"; letter_position=2; candidate_Coordinates=None                                                           }
+                                            })
+|> return_one_coordinate_for_one_word
+|> Seq.iter(fun c -> printfn "%A" c)
+
+
+return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=None };
+                                              { word="world"; letter_position=1; candidate_Coordinates=None };
+                                              { word="world"; letter_position=2; candidate_Coordinates=None }
+                                            })
+|> return_one_coordinate_for_one_word
+|> Seq.iter(fun c -> printfn "%A" c)
 
