@@ -26,7 +26,7 @@ type Letter_status = Placed | Indirect
 type Direction = ACROSS | DOWN
 type DirectionOfMovement = ToStart | ToEnd
 
-type Letter_info = { Letter: char; Down: Option<Letter_status>; Up: Option<Letter_status> }
+type Letter_info = { Letter: char; Down: Option<Letter_status>; Across: Option<Letter_status> }
 type Word_start = { Word: string; Coordinate: Coordinate; Direction: Direction }
 
 let source = Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt")
@@ -163,7 +163,7 @@ let directionForWordToBePlaced (coordinate:Coordinate) =
      let found, res = coordinatesDict.TryGetValue coordinate
 
      match found with
-     | true ->  match (res.Down , res.Up) with
+     | true ->  match (res.Down , res.Across) with
                 | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
                 | None   , Some x -> Some(DOWN)
                 | _               -> None
@@ -179,7 +179,7 @@ let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
             | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
             | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
 
-let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWord:Direction) (gridCoordinate:Coordinate) =
+let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
     // Note using position not offset in the movement calculations
     let positionOfIntersectingLetter = offsetOfIntersectingLetter + 1
@@ -187,23 +187,22 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let NumberOflettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
     let NumberOflettersAfterTheIntersectionLetter = word.Length - positionOfIntersectingLetter
 
-    let coordinateAdjacentToStartLetter               = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord ToStart ).Head
-    let coordinateAdjacentToEndLetter                 = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWord ToEnd   ).Head
+    let coordinateAdjacentToStartLetter               = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart ).Head
+    let coordinateAdjacentToEndLetter                 = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd   ).Head
 
 
-    let coordinatesStartUpToIntersectingLetter        = moveToCoordinate gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWord ToStart
+    let coordinatesStartUpToIntersectingLetter        = moveToCoordinate gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
     let coordinatesStartUpToIntersectingLetterAndChar = 
         match coordinatesStartUpToIntersectingLetter with
         | [] -> []
         | _ ->  [for i in 0 .. coordinatesStartUpToIntersectingLetter.Length - 1 -> (coordinatesStartUpToIntersectingLetter.[i] , word.[i]) ]
 
 
-    let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWord ToEnd
+    let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
     let coordinatesAfterIntersectingToEndLetterAndChar =
         match coordinatesAfterIntersectingToEndLetter with
         | [] -> []
-        | _ ->  [for i in (offsetOfIntersectingLetter + 1)  .. word.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[i]) ]
-
+        | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
 
     if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&
        isCellEmpty coordinateAdjacentToStartLetter && 

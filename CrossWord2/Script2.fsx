@@ -26,7 +26,7 @@ type Letter_status = Placed | Indirect
 type Direction = ACROSS | DOWN
 type DirectionOfMovement = ToStart | ToEnd
 
-type Letter_info = { Letter: char; Down: Option<Letter_status>; Up: Option<Letter_status> }
+type Letter_info = { Letter: char; Down: Option<Letter_status>; Across: Option<Letter_status> }
 type Word_start = { Word: string; Coordinate: Coordinate; Direction: Direction }
 
 let source = Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt")
@@ -142,13 +142,8 @@ let random = Random()
 let isCellEmpty (coordinate:Coordinate) =
 
     let found, res = coordinatesDict.TryGetValue coordinate
-    printfn "found %A" found
-    found |> not
 
-//coordinatesDict.Add({X=1;Y=2} , { Letter='c'; Down=Some(Placed); Up=Some(Placed)})
-//isCellEmpty {X=1;Y=22}
-//printfn "%A" coordinatesDict
-//coordinatesDict.TryGetValue {X=1;Y=22}
+    found |> not
 
 let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) = 
 
@@ -168,7 +163,7 @@ let directionForWordToBePlaced (coordinate:Coordinate) =
      let found, res = coordinatesDict.TryGetValue coordinate
 
      match found with
-     | true ->  match (res.Down , res.Up) with
+     | true ->  match (res.Down , res.Across) with
                 | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
                 | None   , Some x -> Some(DOWN)
                 | _               -> None
@@ -193,6 +188,9 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let NumberOflettersAfterTheIntersectionLetter = word.Length - positionOfIntersectingLetter
 
     let coordinateAdjacentToStartLetter               = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord ToStart ).Head
+    printfn "coordinateAdjacentToStartLetter %A" coordinateAdjacentToStartLetter
+    printfn "%A %A %A" gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWord
+
     let coordinateAdjacentToEndLetter                 = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWord ToEnd   ).Head
 
 
@@ -204,11 +202,20 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
 
     let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWord ToEnd
+    printfn "coordinatesAfterIntersectingToEndLetter %A" coordinatesAfterIntersectingToEndLetter
     let coordinatesAfterIntersectingToEndLetterAndChar =
         match coordinatesAfterIntersectingToEndLetter with
         | [] -> []
-        | _ ->  [for i in (offsetOfIntersectingLetter + 1)  .. word.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[i]) ]
+        | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> 
+                               printfn "%A %A %A" i coordinatesAfterIntersectingToEndLetter.[i] word.[offsetOfIntersectingLetter + 1 + i]
+                               (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
 
+
+    printfn "1] %A %A %A" (isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter) gridCoordinate word.[offsetOfIntersectingLetter]
+    printfn "2] %A %A" (isCellEmpty coordinateAdjacentToStartLetter) coordinateAdjacentToStartLetter
+    printfn "3] %A %A" (isCellEmpty coordinateAdjacentToEndLetter) coordinateAdjacentToEndLetter
+    printfn "%A" (coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
+    printfn "%A" (coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) )
 
     if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&
        isCellEmpty coordinateAdjacentToStartLetter && 
@@ -314,6 +321,114 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
 
 //update_the_dictionaries source_words_2 0
 //|> ignore
+
+
+
+
+// ======================================================
+
+//let coordinatesDict = Dictionary<Coordinate , Letter_info>()
+//coordinatesDict.Add({X=1;Y=2} , { Letter='c'; Down=Some(Placed); Across=Some(Placed)})
+//isCellEmpty {X=1;Y=22}
+//printfn "%A" coordinatesDict
+//coordinatesDict.TryGetValue {X=1;Y=22}
+
+//let coordinatesDict = Dictionary<Coordinate , Letter_info>()
+//coordinatesDict.Add({X=1;Y=2} , { Letter='a'; Down=Some(Placed); Across=Some(Placed)})
+//isCellAvailiable {X=1;Y=2} 'b' LetterOrEmpty 
+//printfn "%A" coordinatesDict
+
+//coordinatesDict.Add({X=1;Y=2} , { Letter='a'; Down=Some(Placed); Across=None})
+//directionForWordToBePlaced {X=1;Y=22}
+//printfn "%A" coordinatesDict
+
+//moveToCoordinate {X=1;Y=2} 5 ACROSS ToEnd
+
+let helperprintout x y =
+
+     let found, res = coordinatesDict.TryGetValue {X=x;Y=y}
+     //printfn "%A %A " found {X=x;Y=y}
+     match found with
+     | true -> printf "%A" res.Letter
+     | false -> printf " "
+
+let printBlock a b c d =
+
+    for y in a .. -1 .. b do
+        printfn ""
+        for x in c .. d do
+            helperprintout x y
+
+//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
+
+//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
+    
+//checkAvailabilityOfRemainingCells "world" 0 DOWN {X=1;Y=2} // true
+//checkAvailabilityOfRemainingCells "world" 1 DOWN {X=2;Y=2} // true
+//checkAvailabilityOfRemainingCells "world" 2 DOWN {X=3;Y=2} // true
+//checkAvailabilityOfRemainingCells "world" 3 DOWN {X=4;Y=2} // true
+//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=5;Y=2} // true
+
+//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=10;Y=2} // false
+//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=15;Y=2} // false
+
+// test 2 
+
+//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=3}   , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=4}   , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=5}   , { Letter='l'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=6}   , { Letter='d'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=7}   , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=8}   , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=9}   , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=10}  , { Letter='l'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=11}  , { Letter='d'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=(-3);Y=11}  , { Letter='x'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=1;Y=12}  , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=13}  , { Letter='o'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=14}  , { Letter='r'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=1;Y=15}  , { Letter='l'; Down=Some(Placed); Across=None})
+
+//coordinatesDict.Add({X=1;Y=16}  , { Letter='d'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=(-3);Y=16}  , { Letter='w'; Down=Some(Placed); Across=None})
+//coordinatesDict.Add({X=(-4);Y=16}  , { Letter='x'; Down=Some(Placed); Across=None})
+    
+//checkAvailabilityOfRemainingCells "world" 0 ACROSS {X=1;Y=2} // true
+//checkAvailabilityOfRemainingCells "world" 1 ACROSS {X=1;Y=3} // true
+//checkAvailabilityOfRemainingCells "world" 2 ACROSS {X=1;Y=4} // true
+//checkAvailabilityOfRemainingCells "world" 3 ACROSS {X=1;Y=5} // true
+//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=6} // true
+
+//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=11} // false
+//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=16} // false
+
+
+//printBlock 12 -4 -3 20
+//printfn "%A" coordinatesDict
+//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
+
+
+
 
 
 
