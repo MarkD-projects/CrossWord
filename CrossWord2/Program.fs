@@ -59,7 +59,7 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
-type For_dictionary_update = {intersection_coordinate:Coordinate ; grid_coordinates_to_be_populated:(Coordinate*char) list ; new_word_direction:Direction}
+type For_dictionary_update = {intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) list ; new_word_direction:Direction}
 type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 
 type Word_state2 = { word: string; letter_position: int; candidate_Coordinates: seq<Coordinate> option }
@@ -181,13 +181,13 @@ let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
             | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
             | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
 
-let return_list_of_empty_grid_coordinates_to_be_populated (coordinates:(Coordinate*char) list) =
+//let return_coordinates_of_the_word (coordinates:(Coordinate*char) list) =
 
-    [ 
-      for xy , letter in coordinates do
-          if isCellAvailiable xy letter Empty then
-             yield xy , letter
-    ]
+//    [ 
+//      for xy , letter in coordinates do
+//          if isCellAvailiable xy letter Empty then
+//             yield xy , letter
+//    ]
 
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
@@ -221,7 +221,7 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
        coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) then
 
        Some( {intersection_coordinate=gridCoordinate;
-              grid_coordinates_to_be_populated=return_list_of_empty_grid_coordinates_to_be_populated (coordinatesStartUpToIntersectingLetterAndChar@coordinatesAfterIntersectingToEndLetterAndChar);
+              coordinates_of_the_word=coordinatesStartUpToIntersectingLetterAndChar@[(gridCoordinate,word.[offsetOfIntersectingLetter])]@coordinatesAfterIntersectingToEndLetterAndChar;
               new_word_direction=lineOfTheWordToBeAdded} )
 
     else
@@ -294,21 +294,26 @@ let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word
     coordinates |>
     Seq.distinctBy (fun state -> state.word)
 
-let do_dict_updates (word:string) (letter_offset:int) (coordinate:Coordinate) =
+let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
-    for i in 0 .. word.Length - 1 do
-        if i <> letter_offset then
-           let found, res = letters.TryGetValue word.[i]
+    for xy , letter in for_dictionary_update.coordinates_of_the_word do
+
+           let found, res = coordinatesDict.TryGetValue xy
+
            match found with
-           | true -> let new_value = res@[coordinate]
-                     letters.Item(word.[i]) <- new_value
-           | false ->
-                     letters.Add(word[i], [coordinate])
+           | true -> match for_dictionary_update.new_word_direction with
+                     | ACROSS -> coordinatesDict.Item(xy) <- {res with Across=Some(Placed)} 
+                     | DOWN   -> coordinatesDict.Item(xy) <- {res with Down=Some(Placed)} 
+           | false -> 
+                     match for_dictionary_update.new_word_direction with
+                     | ACROSS -> coordinatesDict.Add(xy,{Letter_info.Letter=letter; Down=None;         Across=Some(Placed)} )
+                     | DOWN   -> coordinatesDict.Add(xy,{Letter_info.Letter=letter; Down=Some(Placed); Across=None} )
 
+                     let found, res2 = letters.TryGetValue letter
 
-    coordinatesDict.Add({X=2;Y=0}    , { Letter='l'; Down=Some(Placed); Across=None})
-
-    //printfn ("word %A location %A") word xy
+                     match found with
+                     | true  -> letters.Item(letter) <- res2@[xy] // xy is a new location so can append. If xy was the intersect cell then that xy will all ready have been added.
+                     | false -> letters.Add(letter,[xy])
 
     ()
 
@@ -318,7 +323,9 @@ let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) 
         for c in valid_coordinate do
             //printfn ("%A %A %A") c.word c.letter_selected c.can_add_word_here
             match c.can_add_word_here with 
-            | Some(xy)    -> do_dict_updates c.word c.letter_position xy
+            | Some(xy)    -> match c.for_dictionary_update with
+                             | Some(coordinate_info) -> do_dict_updates coordinate_info
+                             | None -> yield! Seq.empty
             | _           -> yield c.word
     }
 
