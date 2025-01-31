@@ -127,13 +127,14 @@ type failed_list = seq<string>
 //    letters.Add('y', [{X=25;Y=2}])
 //    letters.Add('z', [{X=26;Y=2}])
 
-
-let returns_matching_letters_on_the_grid (source_words:string list) : seq<Word_state2> =
+let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
 
     seq {
         for word in source_words do
+            printfn "TOP LEVEL %A " word
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
+                    printfn "TOP LEVEL LETTERS %A " word.[i]
                     let found, res1 = letters.TryGetValue word.[i]
                     match found with
                     | true -> let res2 = Seq.ofList res1
@@ -258,7 +259,7 @@ let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinate
           | AtleastOneValid -> 
                 for state in first_pass do
                     match state.this_coordinate with
-                    | Valid xy  -> yield Some(res)
+                    | Valid xy  -> yield Some(state)
                     | _         -> yield! Seq.empty
           | _ -> yield None }
 
@@ -272,7 +273,10 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
         | NotValid xy -> xy
 
     seq {
+        printfn "SECOND LEVEL"
         for coordinate_info in coordinates do
+            printfn "SECOND LEVEL INFOS %A %A " coordinate_info.word coordinate_info.letter_position
+            //printfn "%A %A" coordinate_info.word coordinate_info.letter_position
             match coordinate_info.candidate_Coordinates with
             | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
             | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
@@ -284,12 +288,26 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
                             | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
         }
 
+    
+
+
 let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word_state3>  =
 
 // could later make this a random selection
 
+// note, fora word there can be a mix of valid and notvalid for a particular letter position 
+// and notvalid for all letter positions
+// this selection must pick a valid if the there one, otherwise just return a None
+
+// looks like can_add_here must deal with all letter positions in one go.
+
+    //coordinates |> Seq.iter(fun c -> printfn "coordinates %A" c) |> ignore
+
     coordinates |>
-    Seq.distinctBy (fun state -> state.word)
+    Seq.distinctBy (fun state -> (state.word,state.can_add_word_here))
+
+
+
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
@@ -318,7 +336,7 @@ let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) 
 
     seq {
         for c in valid_coordinate do
-            //printfn ("%A %A %A") c.word c.letter_selected c.can_add_word_here
+            //printfn ("%A %A %A") c.word c.letter_position c.can_add_word_here
             match c.can_add_word_here with 
             | Some(xy)    -> match c.for_dictionary_update with
                              | Some(coordinate_info) -> do_dict_updates coordinate_info
@@ -650,9 +668,11 @@ let printBlock a b c d =
 
 
 seed_the_first_word source_words.Head
+update_the_dictionaries ["cruel"] 0 |> ignore
+
 update_the_dictionaries source_words.Tail 0 |> ignore
 
-update_the_dictionaries ["cruel"] 0 |> ignore
+
 
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value

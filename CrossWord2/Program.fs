@@ -127,6 +127,13 @@ type failed_list = seq<string>
 //    letters.Add('y', [{X=25;Y=2}])
 //    letters.Add('z', [{X=26;Y=2}])
 
+let returns_one_word_at_time (source_words:string list) =
+
+   seq {
+   
+        for word in source_words do
+            yield word
+       }
 
 let returns_matching_letters_on_the_grid (source_words:string list) : seq<Word_state2> =
 
@@ -258,7 +265,7 @@ let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinate
           | AtleastOneValid -> 
                 for state in first_pass do
                     match state.this_coordinate with
-                    | Valid xy  -> yield Some(res)
+                    | Valid xy  -> yield Some(state)
                     | _         -> yield! Seq.empty
           | _ -> yield None }
 
