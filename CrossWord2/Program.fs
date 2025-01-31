@@ -30,6 +30,8 @@ type Word_start = { Word: string; Coordinate: Coordinate; Direction: Direction }
 
 let source = Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt")
 
+let source_words   = [ "hello"; "world"; "goodbye"; "cruel"; "place" ]
+
 let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
                        |> Array.filter (fun w -> w.Length > 1)
                        |> Array.toList
@@ -66,26 +68,27 @@ type Word_state2 = { word: string; letter_position: int; candidate_Coordinates: 
 type Word_state3 = { word: string; letter_position: int; can_add_word_here: Coordinate option; for_dictionary_update: For_dictionary_update option}
 type failed_list = seq<string>
 
-let update_the_letters_the_dictionary (source_words_2: string list) =
+//let update_the_letters_the_dictionary (source_words_2: string list) =
 
-    let rec read_the_characters (x:int) (y:int) (position:int) (first_word:string) : unit =
+//    let rec read_the_characters (x:int) (y:int) (position:int) (first_word:string) : unit =
 
-        match position < first_word.Length with
-        | true -> try
-                     let current_value = letters.Item(first_word.[position])
-                     let new_value = current_value@[{X=x;Y=y}]
-                     letters.Item(first_word.[position]) <- new_value
-                  with
-                  | :? System.Collections.Generic.KeyNotFoundException as ex -> 
-                       letters.Add(first_word[position], [{X=x;Y=y}])
+//        match position < first_word.Length with
+//        | true -> try
+//                     let current_value = letters.Item(first_word.[position])
+//                     let new_value = current_value@[{X=x;Y=y}]
+//                     letters.Item(first_word.[position]) <- new_value
+//                  with
+//                  | :? System.Collections.Generic.KeyNotFoundException as ex -> 
+//                       letters.Add(first_word[position], [{X=x;Y=y}])
 
-                  read_the_characters (x+1) y (position+1) first_word
+//                  read_the_characters (x+1) y (position+1) first_word
 
-        | false -> ()
+//        | false -> ()
 
-    read_the_characters 0 0 0 source_words_2.Head
+//    read_the_characters 0 0 0 source_words_2.Head
 
-update_the_letters_the_dictionary source_words_2
+//update_the_letters_the_dictionary source_words
+//update_the_letters_the_dictionary source_words_2
 
 //let printDictionary (dict: Dictionary<'Key, 'Value>) =
 //    for KeyValue(key, value) in dict do
@@ -180,14 +183,6 @@ let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
             | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
             | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
             | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
-
-//let return_coordinates_of_the_word (coordinates:(Coordinate*char) list) =
-
-//    [ 
-//      for xy , letter in coordinates do
-//          if isCellAvailiable xy letter Empty then
-//             yield xy , letter
-//    ]
 
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
@@ -291,6 +286,8 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
 
 let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word_state3>  =
 
+// could later make this a random selection
+
     coordinates |>
     Seq.distinctBy (fun state -> state.word)
 
@@ -329,6 +326,14 @@ let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) 
             | _           -> yield c.word
     }
 
+let seed_the_first_word (word:string) :unit =
+    
+    let starting_coordinate = {X=1;Y=2}   
+    let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
+    let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+
+    do_dict_updates {intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
+
 let rec update_the_dictionaries (source_words:string list) (length_of_previous_failed_list:int) =
 
     let failed_list =
@@ -348,8 +353,8 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
     | l when l = 0 -> []                                                 // all words have been added.
     | _ -> update_the_dictionaries failed_list failed_list.Length        // retry the failed to add words
 
-update_the_dictionaries source_words_2 0
-|> ignore
+seed_the_first_word source_words.Head
+update_the_dictionaries source_words.Tail 0 |> ignore
 
 
 
