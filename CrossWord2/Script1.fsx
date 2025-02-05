@@ -23,7 +23,7 @@ let second_level alist =
         }
 
 alist
-//|> top_level_read
+|> top_level_read
 |> second_level
 |> Seq.iter(fun c -> printfn "iter %A" c)
 

@@ -127,18 +127,9 @@ type failed_list = seq<string>
 //    letters.Add('y', [{X=25;Y=2}])
 //    letters.Add('z', [{X=26;Y=2}])
 
-let returns_one_word_at_time (source_words:string list) =
-
-   seq {
-   
-        for word in source_words do
-            yield word
-       }
-
-let returns_matching_letters_on_the_grid (source_words:string list) : seq<Word_state2> =
+let return_a_word_records (word:string) : seq<Word_state2> =
 
     seq {
-        for word in source_words do
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
                     let found, res1 = letters.TryGetValue word.[i]
@@ -146,6 +137,13 @@ let returns_matching_letters_on_the_grid (source_words:string list) : seq<Word_s
                     | true -> let res2 = Seq.ofList res1
                               yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some res2 }
                     | _ ->    yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
+        }
+
+let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
+
+    seq {
+        for word in source_words do
+            yield! return_a_word_records word
         }
 
 let random = Random()

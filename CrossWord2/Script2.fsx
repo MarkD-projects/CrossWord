@@ -127,19 +127,26 @@ type failed_list = seq<string>
 //    letters.Add('y', [{X=25;Y=2}])
 //    letters.Add('z', [{X=26;Y=2}])
 
+let return_a_word_records (word:string) : seq<Word_state2> =
+
+    seq {
+            printfn "return_a_word_records %A " word
+            let wordAsArray = word.ToCharArray()
+            for i = 0 to wordAsArray.Length - 1 do
+                    printfn "return_a_word_records %A " word.[i]
+                    let found, res1 = letters.TryGetValue word.[i]
+                    match found with
+                    | true -> let res2 = Seq.ofList res1
+                              { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some res2 }
+                    | _ ->    { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
+        }
+
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
 
     seq {
         for word in source_words do
-            printfn "TOP LEVEL %A " word
-            let wordAsArray = word.ToCharArray()
-            for i = 0 to wordAsArray.Length - 1 do
-                    printfn "TOP LEVEL LETTERS %A " word.[i]
-                    let found, res1 = letters.TryGetValue word.[i]
-                    match found with
-                    | true -> let res2 = Seq.ofList res1
-                              yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some res2 }
-                    | _ ->    yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
+            printfn "returns_matching_letters_on_the_grid %A " word
+            yield! return_a_word_records word
         }
 
 let random = Random()
@@ -273,9 +280,9 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
         | NotValid xy -> xy
 
     seq {
-        printfn "SECOND LEVEL"
+        printfn "return_status_of_candidate_coordinates"
         for coordinate_info in coordinates do
-            printfn "SECOND LEVEL INFOS %A %A " coordinate_info.word coordinate_info.letter_position
+            printfn "return_status_of_candidate_coordinates %A %A " coordinate_info.word coordinate_info.letter_position
             //printfn "%A %A" coordinate_info.word coordinate_info.letter_position
             match coordinate_info.candidate_Coordinates with
             | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
@@ -302,7 +309,7 @@ let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word
 // looks like can_add_here must deal with all letter positions in one go.
 
     //coordinates |> Seq.iter(fun c -> printfn "coordinates %A" c) |> ignore
-
+    printfn "return_one_coordinate_for_one_word"
     coordinates |>
     Seq.distinctBy (fun state -> (state.word,state.can_add_word_here))
 
@@ -333,10 +340,11 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
     ()
 
 let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) =
-
+    printfn "Update_dictionaries_output_failed_words"
     seq {
         for c in valid_coordinate do
-            //printfn ("%A %A %A") c.word c.letter_position c.can_add_word_here
+            printfn ("Update_dictionaries_output_failed_words %A %A %A %A") c.word c.letter_position c.can_add_word_here c.for_dictionary_update
+            printfn "   "
             match c.can_add_word_here with 
             | Some(xy)    -> match c.for_dictionary_update with
                              | Some(coordinate_info) -> do_dict_updates coordinate_info
@@ -362,8 +370,8 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
         |> Update_dictionaries_output_failed_words
         |> Seq.toList
 
-    //printfn ("failed_list %A") failed_list.Length
-    //printfn ("failed_list %A") failed_list
+    printfn ("failed_list length ========================================= %A") failed_list.Length
+    printfn ("failed_list %A") failed_list
     Console.ReadLine() |> ignore
 
     match failed_list.Length with
@@ -670,7 +678,7 @@ let printBlock a b c d =
 seed_the_first_word source_words.Head
 update_the_dictionaries ["cruel"] 0 |> ignore
 
-update_the_dictionaries source_words.Tail 0 |> ignore
+//update_the_dictionaries source_words.Tail 0 |> ignore
 
 
 
