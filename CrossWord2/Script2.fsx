@@ -147,7 +147,7 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
     seq {
         for word in source_words do
             printfn "returns_matching_letters_on_the_grid %A " word
-            yield! return_a_word_records word
+            yield! return_a_word_records word            // note the returned sequence is self-contained in the record (not used in a pipe). Each record is for one Word.
         }
 
 let random = Random()
@@ -287,13 +287,20 @@ let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinate
 
     seq { match first_pass_cache |> Seq.length with
           | 1 -> yield None
-          | _ -> for state in first_pass_cache do
+          | _ -> for state in (first_pass_cache |> Seq.skip 1) do // first entry is that default yield so the sequence always returns at least one record.
                      match state.this_coordinate with
                      | Valid xy  -> yield Some(state)
                      | _         -> yield! Seq.empty
         }
 
 let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
+
+
+// currently this seq will read all words.
+
+// >>>>>>>>>>>>>>>>>>> deal with all positions at the same time. Like can_add_word_here. Note function can_add_word_here is passed a self-contained Seq.
+
+// >>>>>>>>>>>>>>>> need to break on Word.  >>>> SHOULD THERE BE ONE RECORD FOR WORD WITH SELF-CONTAINED SEQUENCES FOR WORD POSITION AND WITHIN THAT A SEQ COORDINATE CANDIDATE LIST?
 
     let return_value x = 
 
@@ -309,8 +316,8 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
             match coordinate_info.candidate_Coordinates with
             | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
             | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
-                        for location_info in here do // this will be many Valid(xy) or all None
-                            printfn ("can add word here %A") location_info
+                        for location_info in here do // this will be many Valid(xy) or a single None
+                            //printfn ("can add word here %A") location_info
                             match location_info with
                             | Some l -> let xy = return_value l.this_coordinate
                                         yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=Some(xy); for_dictionary_update=l.for_dictionary_update }
@@ -320,15 +327,28 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
     
 
 
+
+
+
 let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word_state3>  =
 
 // could later make this a random selection
 
-// note, fora word there can be a mix of valid and notvalid for a particular letter position 
+// can read in for each position in a word,
+
+//{ word = "cruel"
+//  letter_position = 1
+//  can_add_word_here = None
+//  for_dictionary_update = None } 
+
+//or a can_add_word_here = Some(..
+
+
+// note, for a word there can be a mix of valid and notvalid for a particular letter position 
 // and notvalid for all letter positions
 // this selection must pick a valid if the there one, otherwise just return a None
 
-// looks like can_add_here must deal with all letter positions in one go.
+// >>>>>>>>>>>>>>>>>>> looks like can_add_here must deal with all letter positions in one go.
 
     //coordinates |> Seq.iter(fun c -> printfn "coordinates %A" c) |> ignore
     printfn "return_one_coordinate_for_one_word"
@@ -695,7 +715,7 @@ let printBlock a b c d =
 
 
 seed_the_first_word source_words.Head
-update_the_dictionaries ["cruel"] 0 |> ignore
+update_the_dictionaries ["cruel";"cruelA"] 0 |> ignore
 
 //update_the_dictionaries source_words.Tail 0 |> ignore
 

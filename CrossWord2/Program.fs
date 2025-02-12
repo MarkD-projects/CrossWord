@@ -284,7 +284,7 @@ let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinate
 
     seq { match first_pass_cache |> Seq.length with
           | 1 -> yield None
-          | _ -> for state in first_pass_cache do
+          | _ -> for state in (first_pass_cache |> Seq.skip 1) do // first entry is that default yield so the sequence always returns at least one record.
                      match state.this_coordinate with
                      | Valid xy  -> yield Some(state)
                      | _         -> yield! Seq.empty
