@@ -308,6 +308,20 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
         | Valid xy -> xy
         | NotValid xy -> xy
 
+  
+    // output a streamof these { word ; position ; candidateGridXY } plus end-of-word marker records
+
+    // with the marker record included Seq.Scan {..} can yield a new marker record indicating 
+    // if None of the candidate xy for a word results in a valid place for the word to be added to the grid
+    // or a list of all valid(xy) for a word.
+
+    // a Seq.Filter can then be used to select these modified marker records.
+
+    // one of the valid xy can be selected to update the dictionary
+    // any None marker records can be yielded for passing back in for a re-try.
+
+
+
     seq {
         printfn "return_status_of_candidate_coordinates"
         for coordinate_info in coordinates do
@@ -324,7 +338,23 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
                             | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
         }
 
-    
+ let return_coordinate_summary_per_word (coordinates:seq<Word_state3>)  =
+ 
+    // break on Word, process all xy:position as one group
+
+    coordinates |> 
+    Seq.scan (fun state xy -> match areCellsAvailiable word offsetOfIntersectingLetter xy with
+                                  | Some x -> {this_coordinate=Valid(xy)      ; overall_status=update_overall_status (Valid(xy))    state.overall_status ; for_dictionary_update=Some x }
+                                  | None   -> {this_coordinate=NotValid(xy)   ; overall_status=update_overall_status (NotValid(xy)) state.overall_status ; for_dictionary_update=None }
+                                                        ) {this_coordinate=NotValid({X=0;Y=0}); overall_status=NoneValid; for_dictionary_update=None}
+
+
+
+
+
+
+
+
 
 
 
