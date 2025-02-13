@@ -65,8 +65,22 @@ type For_dictionary_update = {intersection_coordinate:Coordinate ; coordinates_o
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
-type Word_state2 = { word: string; letter_position: int; candidate_Coordinates: seq<Coordinate> option }
-type Word_state3 = { word: string; letter_position: int; can_add_word_here: Coordinate option; for_dictionary_update: For_dictionary_update option}
+
+type Word_state2_data   = { word: string; letter_position: int; candidate_Coordinate: Coordinate option }
+type Word_state2_marker = { end_of_records_marker_for_a_word: string}
+type Word_state2 =
+| DATA2   of Word_state2_data
+| MARKER2 of Word_state2_marker
+
+
+type Word_state3_data   = { word: string; letter_position: int; can_add_word_here: Coordinate option; for_dictionary_update: For_dictionary_update option}
+type Word_state3_marker = { end_of_records_marker_for_a_word: string}
+type Word_state3 =
+| DATA3   of Word_state3_data
+| MARKER3 of Word_state3_marker
+
+
+
 type failed_list = seq<string>
 
 //let update_the_letters_the_dictionary (source_words_2: string list) =
@@ -128,26 +142,34 @@ type failed_list = seq<string>
 //    letters.Add('y', [{X=25;Y=2}])
 //    letters.Add('z', [{X=26;Y=2}])
 
-let return_a_word_records (word:string) : seq<Word_state2> =
+//let return_a_word_records (word:string) : seq<Word_state2> =
 
-    seq {
-            printfn "return_a_word_records %A " word
-            let wordAsArray = word.ToCharArray()
-            for i = 0 to wordAsArray.Length - 1 do
-                    printfn "return_a_word_records %A " word.[i]
-                    let found, res1 = letters.TryGetValue word.[i]
-                    match found with
-                    | true -> let res2 = Seq.ofList res1
-                              yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some res2 }
-                    | _ ->    yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
-        }
+//    seq {
+//            printfn "return_a_word_records %A " word
+//            let wordAsArray = word.ToCharArray()
+//            for i = 0 to wordAsArray.Length - 1 do
+//                    printfn "return_a_word_records %A " word.[i]
+//                    let found, res1 = letters.TryGetValue word.[i]
+//                    match found with
+//                    | true -> for xy in res1 do
+//                                yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some xy }
+//                    | _    -> yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
+//        }
 
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
 
     seq {
         for word in source_words do
             printfn "returns_matching_letters_on_the_grid %A " word
-            yield! return_a_word_records word            // note the returned sequence is self-contained in the record (not used in a pipe). Each record is for one Word.
+            let wordAsArray = word.ToCharArray()
+            for i = 0 to wordAsArray.Length - 1 do
+                    printfn "return_a_word_records %A " word.[i]
+                    let found, res1 = letters.TryGetValue word.[i]
+                    match found with
+                    | true -> for xy in res1 do
+                                yield DATA2 { word=word; letter_position=i; candidate_Coordinates=Some xy }
+                    | _    -> yield DATA2 { word=word; letter_position=i; candidate_Coordinates=None }
+            yield MARKER2 { end_of_records_marker_for_a_word=word}
         }
 
 let random = Random()
@@ -244,63 +266,33 @@ let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoord
 
 let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinates:seq<Coordinate>) = 
 
-    //let update_overall_status this_coordinate overall_status =
-
-    //    match (this_coordinate, overall_status) with
-    //    | (Valid(xy1), AtleastOneValid)    -> overall_status
-    //    | (Valid(xy1), _)                  -> AtleastOneValid
-    //    | (NotValid(xy1), _)               -> overall_status
-
     //let first_pass =
-    //    coordinates |> 
-    //    Seq.scan (fun state xy -> match areCellsAvailiable word offsetOfIntersectingLetter xy with
-    //                              | Some x -> {this_coordinate=Valid(xy)      ; overall_status=update_overall_status (Valid(xy))    state.overall_status ; for_dictionary_update=Some x }
-    //                              | None   -> {this_coordinate=NotValid(xy)   ; overall_status=update_overall_status (NotValid(xy)) state.overall_status ; for_dictionary_update=None }
-    //                                                    ) {this_coordinate=NotValid({X=0;Y=0}); overall_status=NoneValid; for_dictionary_update=None}
-    //    |> Seq.skip 1 // initial state (NoneValid)
-    //    |> Seq.cache
 
-    let first_pass =
-
-        seq {  yield {this_coordinate=NotValid({X=0;Y=0}); for_dictionary_update=None}
+    //    seq {  yield {this_coordinate=NotValid({X=0;Y=0}); for_dictionary_update=None}
         
-               for xy in coordinates do
+    //           for xy in coordinates do
                
-                   match areCellsAvailiable word offsetOfIntersectingLetter xy with
-                   | Some x -> yield {this_coordinate=Valid(xy) ; for_dictionary_update=Some x }
-                   | None   -> yield! Seq.empty
+    //               match areCellsAvailiable word offsetOfIntersectingLetter xy with
+    //               | Some x -> yield {this_coordinate=Valid(xy) ; for_dictionary_update=Some x }
+    //               | None   -> yield! Seq.empty
         
-        } 
+    //    } 
 
-    let first_pass_cache = first_pass |> Seq.cache
+    //let first_pass_cache = first_pass |> Seq.cache
 
-    //let res = first_pass 
-    //          |> Seq.last
-              
-    //seq { match res.overall_status with
-    //      | AtleastOneValid -> 
-    //            for state in first_pass do
-    //                match state.this_coordinate with
-    //                | Valid xy  -> yield Some(state)
-    //                | _         -> yield! Seq.empty
-    //      | _ -> yield None }
 
-    seq { match first_pass_cache |> Seq.length with
-          | 1 -> yield None
-          | _ -> for state in (first_pass_cache |> Seq.skip 1) do // first entry is that default yield so the sequence always returns at least one record.
-                     match state.this_coordinate with
-                     | Valid xy  -> yield Some(state)
-                     | _         -> yield! Seq.empty
-        }
+    //seq { match first_pass_cache |> Seq.length with
+    //      | 1 -> yield None
+    //      | _ -> for state in (first_pass_cache |> Seq.skip 1) do // first entry is that default yield so the sequence always returns at least one record.
+    //                 match state.this_coordinate with
+    //                 | Valid xy  -> yield Some(state)
+    //                 | _         -> yield! Seq.empty
+    //    }
+
+
+
 
 let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
-
-
-// currently this seq will read all words.
-
-// >>>>>>>>>>>>>>>>>>> deal with all positions at the same time. Like can_add_word_here. Note function can_add_word_here is passed a self-contained Seq.
-
-// >>>>>>>>>>>>>>>> need to break on Word.  >>>> SHOULD THERE BE ONE RECORD FOR WORD WITH SELF-CONTAINED SEQUENCES FOR WORD POSITION AND WITHIN THAT A SEQ COORDINATE CANDIDATE LIST?
 
     let return_value x = 
 
@@ -309,34 +301,49 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
         | NotValid xy -> xy
 
   
-    // output a streamof these { word ; position ; candidateGridXY } plus end-of-word marker records
+    // output a streamof these { word ; position ; aCandidateGridXY } plus end-of-word marker records
 
     // with the marker record included Seq.Scan {..} can yield a new marker record indicating 
     // if None of the candidate xy for a word results in a valid place for the word to be added to the grid
-    // or a list of all valid(xy) for a word.
+    // or a marker record containing a list of all valid(xy) for a word.
 
-    // a Seq.Filter can then be used to select these modified marker records.
+    // a Seq.Filter can then be used to select just these modified marker records.
 
-    // one of the valid xy can be selected to update the dictionary
-    // any None marker records can be yielded for passing back in for a re-try.
+    // one of the valid xy can be selected (randomly) to update the dictionary
+    // None marker records can be yielded for passing back in for a re-try.
+
+    //seq {
+    //    printfn "return_status_of_candidate_coordinates"
+    //    for coordinate_info in coordinates do
+    //        printfn "return_status_of_candidate_coordinates %A %A " coordinate_info.word coordinate_info.letter_position
+    //        //printfn "%A %A" coordinate_info.word coordinate_info.letter_position
+    //        match coordinate_info.candidate_Coordinates with
+    //        | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
+    //        | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
+    //                    for location_info in here do // this will be many Valid(xy) or a single None
+    //                        //printfn ("can add word here %A") location_info
+    //                        match location_info with
+    //                        | Some l -> let xy = return_value l.this_coordinate
+    //                                    yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=Some(xy); for_dictionary_update=l.for_dictionary_update }
+    //                        | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
+    //    }
+
+    coordinates
+    |> Seq.scan (fun state xy -> match xy with
+                                 | DATA2 a -> match a.candidate_Coordinate with
+                                              | None   -> DATA3 { word=a.word; letter_position=a.letter_position; can_add_word_here=None; for_dictionary_update=None }
+                                              | Some c -> let here = areCellsAvailiable a.word a.letter_position c
+                                                          match here with
+                                                          | Some h -> DATA3 { word=a.word; letter_position=a.letter_position; can_add_word_here=Some(c); for_dictionary_update=Some(h) }
+                                                          | None   -> MARKER3 { end_of_records_marker_for_a_word=a.word }
+                                 | MARKER2 b -> MARKER3 { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
+    
+    ) (DATA3 { word="";letter_position=0; can_add_word_here=None; for_dictionary_update=None})
 
 
 
-    seq {
-        printfn "return_status_of_candidate_coordinates"
-        for coordinate_info in coordinates do
-            printfn "return_status_of_candidate_coordinates %A %A " coordinate_info.word coordinate_info.letter_position
-            //printfn "%A %A" coordinate_info.word coordinate_info.letter_position
-            match coordinate_info.candidate_Coordinates with
-            | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
-            | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
-                        for location_info in here do // this will be many Valid(xy) or a single None
-                            //printfn ("can add word here %A") location_info
-                            match location_info with
-                            | Some l -> let xy = return_value l.this_coordinate
-                                        yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=Some(xy); for_dictionary_update=l.for_dictionary_update }
-                            | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
-        }
+
+
 
  let return_coordinate_summary_per_word (coordinates:seq<Word_state3>)  =
  
