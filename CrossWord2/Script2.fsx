@@ -89,9 +89,12 @@ type Word_state3b =
 | DATA3b   of Word_state3b_data
 | MARKER3b of Word_state3b_marker
 
+type AccStatus =
+| Final
+| Intermediate
 
-type Word_state4  = { for_dictionary_update: For_dictionary_update list }
-
+type Word_state4  = { status: AccStatus; for_dictionary_update: For_dictionary_update list }
+type Word_state5  = { for_dictionary_update: For_dictionary_update list }
 
 
 type failed_list = seq<string>
@@ -355,7 +358,7 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
     |> Seq.skip 1 // omit the initial state
 
 
-let select_one_valid_coordinate_per_word (coordinates:seq<Word_state3>)  =
+let collect_the_valid_coordinates (coordinates:seq<Word_state3>)  =
  
   seq { for coordinate in coordinates do
   
@@ -367,39 +370,31 @@ let select_one_valid_coordinate_per_word (coordinates:seq<Word_state3>)  =
        }
 
   |> Seq.scan(fun (state:Word_state4) xy -> match xy with
-                                            | DATA3b a   -> {state with for_dictionary_update=state.for_dictionary_update@[a.for_dictionary_update]} // also add to Dict
-                                            | MARKER3b b -> state // select from Dict then clear Dict
-    ) ({Word_state4.for_dictionary_update=[]})
+                                            | DATA3b a   -> match state.status with
+                                                            | Final        -> {Word_state4.status=Intermediate; for_dictionary_update=[a.for_dictionary_update]}
+                                                            | Intermediate -> {state with status=Intermediate; for_dictionary_update=state.for_dictionary_update@[a.for_dictionary_update]}
+                                            | MARKER3b b -> {state with status=Final}
+    ) ({Word_state4.status=Final; for_dictionary_update=[]})
   
   |> Seq.skip 1 // omit the initial state
-  
-  
+  |> Seq.filter(fun c -> match c.status with
+                         | Final -> true
+                         | _ -> false)
+  |> Seq.map(fun c -> {Word_state5.for_dictionary_update = c.for_dictionary_update} )
 
 
-let return_one_coordinate_for_one_word (coordinates:seq<Word_state3>) : seq<Word_state3>  =
+  WORKING HERE
 
-// could later make this a random selection
+let return_one_coordinate_for_one_word (dictionary_data:seq<Word_state5>) =
 
-// can read in for each position in a word,
+ seq { for c in dictionary_data do
+ 
+       let valid_XY_count = c.for_dictionary_update.Length
+       let indx = random.Next(0, valid_XY_count)
+       let selected_a_Coordinate = c.for_dictionary_update.[indx]
+       yield selected_a_Coordinate
+     }
 
-//{ word = "cruel"
-//  letter_position = 1
-//  can_add_word_here = None
-//  for_dictionary_update = None } 
-
-//or a can_add_word_here = Some(..
-
-
-// note, for a word there can be a mix of valid and notvalid for a particular letter position 
-// and notvalid for all letter positions
-// this selection must pick a valid if the there one, otherwise just return a None
-
-// >>>>>>>>>>>>>>>>>>> looks like can_add_here must deal with all letter positions in one go.
-
-    //coordinates |> Seq.iter(fun c -> printfn "coordinates %A" c) |> ignore
-    printfn "return_one_coordinate_for_one_word"
-    coordinates |>
-    Seq.distinctBy (fun state -> state.word)
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
