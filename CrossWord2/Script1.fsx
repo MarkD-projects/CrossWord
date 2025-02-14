@@ -47,9 +47,27 @@ seq { for x in 1 .. 10 do yield x }
 |> Seq.scan (fun state num -> match (num % 2) with
                               | 0 -> Seq.empty     // <<<<<<<<<<
                               | _ -> seq {yield num}  ) (seq{yield 0})
-|> Seq.collect(fun x -> x)
+|> Seq.collect(fun x -> x)   // removes the empty sequences
 |> fun x -> Seq.append x [999]
 |> Seq.iter(fun num -> printfn "%A" num)
+
+
+
+seq { for x in 1 .. 10 do yield x }
+|> Seq.scan (fun state num -> match (num % 2) with
+                              | 0 -> Some(num)
+                              | _ -> None ) (Some(0))
+|> Seq.iter(fun num -> printfn "%A" num)
+
+
+
+
+seq { for x in 1 .. 10 do yield x }
+|> Seq.scan (fun state num -> match (num % 2) with
+                              | 0 -> Seq.empty     // will output empty sequences
+                              | _ -> seq {yield num}  ) (seq{yield 0})
+|> Seq.iter(fun num -> printfn "%A" num)
+
 
 
 
