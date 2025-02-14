@@ -335,7 +335,7 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
                                               | Some c -> let here = areCellsAvailiable a.word a.letter_position c
                                                           match here with
                                                           | Some h -> DATA3 { word=a.word; letter_position=a.letter_position; can_add_word_here=Some(c); for_dictionary_update=Some(h) }
-                                                          | None   -> MARKER3 { end_of_records_marker_for_a_word=a.word }
+                                                          | None   -> DATA3 { word=a.word; letter_position=a.letter_position; can_add_word_here=None; for_dictionary_update=None }
                                  | MARKER2 b -> MARKER3 { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
     
     ) (DATA3 { word="";letter_position=0; can_add_word_here=None; for_dictionary_update=None})

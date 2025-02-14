@@ -29,3 +29,30 @@ alist
 
 
 
+seq { for x in 1 .. 10 do yield x }
+|> Seq.scan (fun state num -> match (num % 2) with
+                              | 0 -> seq {yield num; yield num * 10}   // sequence of  sequence   <<<<<<<<
+                              | _ -> seq {yield num}  ) (seq{yield 0})
+|> Seq.collect(fun x -> x)
+|> fun x -> Seq.append x [999]   // note, the last record state from the scan will contain all the final info. So can be used to append a marker record if needed.
+|> Seq.iter(fun num -> printfn "%A" num)
+
+
+// NOTE 
+// can output an empty sequence. So may be able to omit the No Valid Coordinate records.
+// current Scan code does not accumutate the Valid(xy)
+// remember output will include the initial record
+
+seq { for x in 1 .. 10 do yield x }
+|> Seq.scan (fun state num -> match (num % 2) with
+                              | 0 -> Seq.empty     // <<<<<<<<<<
+                              | _ -> seq {yield num}  ) (seq{yield 0})
+|> Seq.collect(fun x -> x)
+|> fun x -> Seq.append x [999]
+|> Seq.iter(fun num -> printfn "%A" num)
+
+
+
+
+
+
