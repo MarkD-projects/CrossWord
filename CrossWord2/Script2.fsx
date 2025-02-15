@@ -373,7 +373,10 @@ let collect_the_valid_coordinates (coordinates:seq<Word_state3>)  =
                                             | DATA3b a   -> match state.status with
                                                             | Final        -> {Word_state4.status=Intermediate; for_dictionary_update=[a.for_dictionary_update]}
                                                             | Intermediate -> {state with status=Intermediate; for_dictionary_update=state.for_dictionary_update@[a.for_dictionary_update]}
-                                            | MARKER3b b -> {state with status=Final}
+                                            | MARKER3b b -> match state.status with
+                                                            | Final        -> {state with status=Final ; for_dictionary_update=[]} // final followed by final means that flag has no preceeding valid coodinates
+                                                            | Intermediate -> {state with status=Final} // the previous record was the last of the valid coordinates
+
     ) ({Word_state4.status=Final; for_dictionary_update=[]})
   
   |> Seq.skip 1 // omit the initial state
