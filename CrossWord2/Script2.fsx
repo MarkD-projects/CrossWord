@@ -426,10 +426,9 @@ let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
     printfn "Update_dictionaries_output_failed_words"
     seq {
         for c in dictionary_data do
-            printfn ("Update_dictionaries_output_failed_words %A") c
-            printfn "   "
             match c.for_dictionary_update with 
-            | Some coordinate_info -> do_dict_updates coordinate_info
+            | Some coordinate_info -> printfn "for updating %A" coordinate_info
+                                      do_dict_updates coordinate_info
                                       yield! Seq.empty
             | _                    -> yield c.word
     }
@@ -440,7 +439,7 @@ let seed_the_first_word (word:string) :unit =
     let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
     let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
 
-    do_dict_updates {intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
+    do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
 
 let rec update_the_dictionaries (source_words:string list) (length_of_previous_failed_list:int) =
 
@@ -759,6 +758,19 @@ let printBlock a b c d =
 
 
 seed_the_first_word source_words.Head
+
+["cruel"]
+|> returns_matching_letters_on_the_grid 
+|> return_status_of_candidate_coordinates 
+|> collect_the_valid_coordinates
+|> return_one_coordinate_for_one_word
+//|> Seq.iter(fun i -> printfn "%A" i)
+|> Update_dictionaries_output_failed_words
+|> Seq.toList
+
+
+
+
 update_the_dictionaries ["cruel";"cruelA"] 0 |> ignore
 
 //update_the_dictionaries source_words.Tail 0 |> ignore
