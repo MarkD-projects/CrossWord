@@ -281,69 +281,12 @@ let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoord
                 | false -> None
     | None   -> None
 
-//let can_add_word_here (word:string) (offsetOfIntersectingLetter:int) (coordinates:seq<Coordinate>) = 
 
-    //let first_pass =
-
-    //    seq {  yield {this_coordinate=NotValid({X=0;Y=0}); for_dictionary_update=None}
-        
-    //           for xy in coordinates do
-               
-    //               match areCellsAvailiable word offsetOfIntersectingLetter xy with
-    //               | Some x -> yield {this_coordinate=Valid(xy) ; for_dictionary_update=Some x }
-    //               | None   -> yield! Seq.empty
-        
-    //    } 
-
-    //let first_pass_cache = first_pass |> Seq.cache
-
-
-    //seq { match first_pass_cache |> Seq.length with
-    //      | 1 -> yield None
-    //      | _ -> for state in (first_pass_cache |> Seq.skip 1) do // first entry is that default yield so the sequence always returns at least one record.
-    //                 match state.this_coordinate with
-    //                 | Valid xy  -> yield Some(state)
-    //                 | _         -> yield! Seq.empty
-    //    }
 
 
 
 
 let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
-
-    let return_value x = 
-
-        match x with
-        | Valid xy -> xy
-        | NotValid xy -> xy
-
-  
-    // output a streamof these { word ; position ; aCandidateGridXY } plus end-of-word marker records
-
-    // with the marker record included Seq.Scan {..} can yield a new marker record indicating 
-    // if None of the candidate xy for a word results in a valid place for the word to be added to the grid
-    // or a marker record containing a list of all valid(xy) for a word.
-
-    // a Seq.Filter can then be used to select just these modified marker records.
-
-    // one of the valid xy can be selected (randomly) to update the dictionary
-    // None marker records can be yielded for passing back in for a re-try.
-
-    //seq {
-    //    printfn "return_status_of_candidate_coordinates"
-    //    for coordinate_info in coordinates do
-    //        printfn "return_status_of_candidate_coordinates %A %A " coordinate_info.word coordinate_info.letter_position
-    //        //printfn "%A %A" coordinate_info.word coordinate_info.letter_position
-    //        match coordinate_info.candidate_Coordinates with
-    //        | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
-    //        | Some c -> let here = can_add_word_here coordinate_info.word coordinate_info.letter_position c 
-    //                    for location_info in here do // this will be many Valid(xy) or a single None
-    //                        //printfn ("can add word here %A") location_info
-    //                        match location_info with
-    //                        | Some l -> let xy = return_value l.this_coordinate
-    //                                    yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=Some(xy); for_dictionary_update=l.for_dictionary_update }
-    //                        | None   -> yield { Word_state3.word=coordinate_info.word; letter_position=coordinate_info.letter_position; can_add_word_here=None; for_dictionary_update=None }
-    //    }
 
     coordinates
     |> Seq.scan (fun state xy -> match xy with
@@ -526,25 +469,43 @@ let debug b =
 
 
 
+//seed_the_first_word "aaaaaaaaaaaaaaaaa"
+//update_the_dictionaries ["aaaaa"; "ba";"cca";"ddda";"eeeea"] 0
+//printBlock 30 -30 -30 30
+//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 
-seed_the_first_word "aaaaaaaaaaaaaaaaa"
-update_the_dictionaries ["aaaaa"; "ba";"cca";"ddda";"eeeea"] 0
-printBlock 30 -30 -30 30
+
+
+
+seed_the_first_word source_words_2.Head
+update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+printBlock 300 -300 -300 300
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
-
-
-
-
-
-
-
-
 
 
 
 
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
+
+
+// next steps
+
+// do not allow appending to the start and end of ACROSS and DOWN words. 
+// Currently it is just in one direction.
+
+// try with first 50 words
+// output Dictionary to a text file
+// new functions to find lowest and highest x and y
+
+// how to highlight non-placed or placed words.
+// output to Excel? PDF?
+
+
+
+
+
+
 
 
 
