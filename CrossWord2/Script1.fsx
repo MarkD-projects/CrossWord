@@ -70,7 +70,8 @@ seq { for x in 1 .. 10 do yield x }
 
 
 
-
-
+seq {yield 'a'; yield 'b'; yield 'c'; yield 'd'; yield 'e'; yield 'f'; }
+|> Seq.map(fun a -> a.ToString() )
+|> Seq.reduce (fun a b -> a + b )
 
 

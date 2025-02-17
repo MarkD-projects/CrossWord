@@ -176,10 +176,10 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
 
     seq {
         for word in source_words do
-            printfn "returns_matching_letters_on_the_grid %A " word
+            //printfn "returns_matching_letters_on_the_grid %A " word
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
-                    printfn "return_a_word_records %A " word.[i]
+                    //printfn "return_a_word_records %A " word.[i]
                     let found, res1 = letters.TryGetValue word.[i]
                     match found with
                     | true -> for xy in res1 do
@@ -427,15 +427,14 @@ let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
     seq {
         for c in dictionary_data do
             match c.for_dictionary_update with 
-            | Some coordinate_info -> printfn "for updating %A" coordinate_info
-                                      do_dict_updates coordinate_info
+            | Some coordinate_info -> do_dict_updates coordinate_info
                                       yield! Seq.empty
             | _                    -> yield c.word
     }
 
 let seed_the_first_word (word:string) :unit =
     
-    let starting_coordinate = {X=1;Y=2}   
+    let starting_coordinate = {X=0;Y=0}   
     let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
     let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
 
@@ -463,317 +462,84 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
 
 
 
-// ======================================================
-
-//let coordinatesDict = Dictionary<Coordinate , Letter_info>()
-//coordinatesDict.Add({X=1;Y=2} , { Letter='c'; Down=Some(Placed); Across=Some(Placed)})
-//isCellEmpty {X=1;Y=22}
-//printfn "%A" coordinatesDict
-//coordinatesDict.TryGetValue {X=1;Y=22}
-
-//let coordinatesDict = Dictionary<Coordinate , Letter_info>()
-//coordinatesDict.Add({X=1;Y=2} , { Letter='a'; Down=Some(Placed); Across=Some(Placed)})
-//isCellAvailiable {X=1;Y=2} 'b' LetterOrEmpty 
-//printfn "%A" coordinatesDict
-
-//coordinatesDict.Add({X=1;Y=2} , { Letter='a'; Down=Some(Placed); Across=None})
-//directionForWordToBePlaced {X=1;Y=22}
-//printfn "%A" coordinatesDict
-
-//moveToCoordinate {X=1;Y=2} 5 ACROSS ToEnd
-
 let helperprintout x y =
 
      let found, res = coordinatesDict.TryGetValue {X=x;Y=y}
-     //printfn "%A %A " found {X=x;Y=y}
+
      match found with
-     | true -> printf "%A" res.Letter
-     | false -> printf " "
+     | true -> res.Letter
+     | false -> ' '
 
-let printBlock a b c d =
+let printBlock y_top y_bottom x_left x_right =
 
-    for y in a .. -1 .. b do
-        printfn ""
-        for x in c .. d do
-            helperprintout x y
+    for y in y_top .. -1 .. y_bottom do
 
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
+        let row_data = seq { for x in x_left .. x_right do yield (helperprintout x y) }
 
-//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
+        let return_a_row = row_data 
+                           |> Seq.map(fun a -> a.ToString() )
+                           |> Seq.reduce (fun a b -> a + b)
 
-//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
+        printfn "%A" return_a_row
 
-//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
-    
-//checkAvailabilityOfRemainingCells "world" 0 DOWN {X=1;Y=2} // true
-//checkAvailabilityOfRemainingCells "world" 1 DOWN {X=2;Y=2} // true
-//checkAvailabilityOfRemainingCells "world" 2 DOWN {X=3;Y=2} // true
-//checkAvailabilityOfRemainingCells "world" 3 DOWN {X=4;Y=2} // true
-//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=5;Y=2} // true
+let debug b =
 
-//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=10;Y=2} // false
-//checkAvailabilityOfRemainingCells "world" 4 DOWN {X=15;Y=2} // false
-
-// test 2 
-
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=3}   , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=4}   , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=5}   , { Letter='l'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=6}   , { Letter='d'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=7}   , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=8}   , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=9}   , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=10}  , { Letter='l'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=11}  , { Letter='d'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=(-3);Y=11}  , { Letter='x'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=1;Y=12}  , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=13}  , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=14}  , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=15}  , { Letter='l'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=1;Y=16}  , { Letter='d'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=(-3);Y=16}  , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=(-4);Y=16}  , { Letter='x'; Down=Some(Placed); Across=None})
-    
-//checkAvailabilityOfRemainingCells "world" 0 ACROSS {X=1;Y=2} // true
-//checkAvailabilityOfRemainingCells "world" 1 ACROSS {X=1;Y=3} // true
-//checkAvailabilityOfRemainingCells "world" 2 ACROSS {X=1;Y=4} // true
-//checkAvailabilityOfRemainingCells "world" 3 ACROSS {X=1;Y=5} // true
-//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=6} // true
-
-//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=11} // false
-//checkAvailabilityOfRemainingCells "world" 4 ACROSS {X=1;Y=16} // false
-
-
-//printBlock 12 -4 -3 20
-//printfn "%A" coordinatesDict
-//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
+   seq { for a in b do
+             printfn "debug %A" a
+             yield a
+       }
 
 
 
+//seed_the_first_word source_words.Head
 
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
-
-//areCellsAvailiable "world" 0 {X=1;Y=2} // true
-//areCellsAvailiable "world" 1 {X=2;Y=2} // true
-
-//areCellsAvailiable "world" 2 {X=3;Y=2} // true
-//areCellsAvailiable "world" 3 {X=3;Y=2} // false
-
-//areCellsAvailiable "world" 4 {X=10;Y=2} //false
-//areCellsAvailiable "world" 4 {X=15;Y=2} // false
-
-// test 2 
-
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=3}   , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=4}   , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=5}   , { Letter='l'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=6}   , { Letter='d'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=7}   , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=8}   , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=9}   , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=10}  , { Letter='l'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=11}  , { Letter='d'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=(-3);Y=11}  , { Letter='x'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=1;Y=12}  , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=13}  , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=14}  , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=1;Y=15}  , { Letter='l'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=1;Y=16}  , { Letter='d'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=(-3);Y=16}  , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=(-4);Y=16}  , { Letter='x'; Down=Some(Placed); Across=None})
-    
-//areCellsAvailiable "world" 0 {X=1;Y=2} // true
-//areCellsAvailiable "world" 1 {X=1;Y=3} // true
-//areCellsAvailiable "world" 2 {X=1;Y=4} // true
-//areCellsAvailiable "world" 3 {X=1;Y=5} // true
-
-//areCellsAvailiable "world" 4 {X=1;Y=6} // true
-//areCellsAvailiable "world" 3 {X=1;Y=6} // false
-
-//areCellsAvailiable "world" 4 {X=1;Y=11} // false
-//areCellsAvailiable "world" 4 {X=1;Y=16} // false
-
-//directionForWordToBePlaced {X=2;Y=2}
-//isCellAvailiable {X=2;Y=2} 'o' Letter
-
-//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
-
-
-
-
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=10;Y=6}  , { Letter='x'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=15;Y=7}  , { Letter='x'; Down=None; Across=Some(Placed)})
-
-//can_add_word_here "world" 0 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=10;Y=6} } )
-//can_add_word_here "world" 4 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=10;Y=6};{X=5;Y=2};{X=15;Y=2} } )
-
-
-//coordinatesDict.Add({X=1;Y=2}   , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=2;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=3;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=4;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=5;Y=2}   , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=6;Y=2}   , { Letter='w'; Down=Some(Placed); Across=Some(Placed)})
-//coordinatesDict.Add({X=7;Y=2}   , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=8;Y=2}   , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=9;Y=2}   , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=10;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=11;Y=2}  , { Letter='w'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=12;Y=2}  , { Letter='o'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=13;Y=2}  , { Letter='r'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=14;Y=2}  , { Letter='l'; Down=None; Across=Some(Placed)})
-//coordinatesDict.Add({X=15;Y=2}  , { Letter='d'; Down=None; Across=Some(Placed)})
-
-//coordinatesDict.Add({X=15;Y=6} , { Letter='w'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=15;Y=5} , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=15;Y=4} , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=15;Y=3} , { Letter='l'; Down=Some(Placed); Across=None})
-//// coordinatesDict.Add({X=15;Y=2} , { Letter='d'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=2;Y=3}    , { Letter='w'; Down=Some(Placed); Across=None})
-//// coordinatesDict.Add({X=2;Y=2}    , { Letter='o'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=2;Y=1}    , { Letter='r'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=2;Y=0}    , { Letter='l'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=2;Y=(-1)} , { Letter='d'; Down=Some(Placed); Across=None})
-
-//coordinatesDict.Add({X=6;Y=3}  , { Letter='x'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=6;Y=1}  , { Letter='x'; Down=Some(Placed); Across=None})
-//coordinatesDict.Add({X=11;Y=0} , { Letter='x'; Down=None; Across=Some(Placed)})
-
-
-//can_add_word_here "world" 0 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} } )
-//|> Seq.iter(fun c -> printfn "%A" c)
-
-
-//can_add_word_here "world" 1 (seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} } )
-//|> Seq.iter(fun c -> printfn "%A" c)
-
-
-//return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
-//                                              { word="world"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
-//                                              { word="world"; letter_position=2; candidate_Coordinates=None                                                           }
-//                                            })
-//|> Seq.iter(fun c -> printfn "%A" c)
-
-//return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
-//                                              { word="world"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
-//                                              { word="world"; letter_position=2; candidate_Coordinates=None                                                           }
-//                                            })
+//["cruel";"xxxx";"aaobb"]
+//|> returns_matching_letters_on_the_grid 
+//|> return_status_of_candidate_coordinates 
+////|> debug
+//|> collect_the_valid_coordinates
+////|> debug
 //|> return_one_coordinate_for_one_word
-//|> Seq.iter(fun c -> printfn "%A" c)
+//|> debug
+//|> Update_dictionaries_output_failed_words
+//|> Seq.toList
 
 
-//return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
-//                                              { word="world"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
-//                                              { word="world"; letter_position=2; candidate_Coordinates=None                                                           }
-//                                            })
+
+//seed_the_first_word "hcccccckcccccccci"
+
+//["fbbbbbh";"jeeeeek";"xxx";"gdddddi";"yyy";"faaaaaajaaaaaaaag";"zzz"]
+//|> returns_matching_letters_on_the_grid 
+//|> return_status_of_candidate_coordinates 
+//|> collect_the_valid_coordinates
 //|> return_one_coordinate_for_one_word
 //|> Update_dictionaries_output_failed_words
 //|> Seq.toList
-//|> Seq.iter(fun c -> printfn "%A" c)
-
-
-//return_status_of_candidate_coordinates (seq { { word="xxxxx"; letter_position=0; candidate_Coordinates=Some(seq { {X=1;Y=2};{X=6;Y=2};{X=11;Y=2};{X=15;Y=6};{X=2;Y=3} })};
-//                                              { word="yyyyy"; letter_position=1; candidate_Coordinates=Some(seq { {X=2;Y=2};{X=7;Y=2};{X=12;Y=2};{X=15;Y=5}           })};
-//                                              { word="qqqqq"; letter_position=2; candidate_Coordinates=None                                                           }
-//                                            })
-//|> return_one_coordinate_for_one_word
-//|> Update_dictionaries_output_failed_words
-//|> Seq.toList
-//|> Seq.iter(fun c -> printfn "%A" c)
-
-
-//return_status_of_candidate_coordinates (seq { { word="world"; letter_position=0; candidate_Coordinates=None };
-//                                              { word="world"; letter_position=1; candidate_Coordinates=None };
-//                                              { word="world"; letter_position=2; candidate_Coordinates=None }
-//                                            })
-//|> return_one_coordinate_for_one_word
-//|> Seq.iter(fun c -> printfn "%A" c)
 
 
 
 
-//seed_the_first_word "world"
-
-//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
-//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
-
-
-seed_the_first_word source_words.Head
-
-["cruel"]
-|> returns_matching_letters_on_the_grid 
-|> return_status_of_candidate_coordinates 
-|> collect_the_valid_coordinates
-|> return_one_coordinate_for_one_word
-//|> Seq.iter(fun i -> printfn "%A" i)
-|> Update_dictionaries_output_failed_words
-|> Seq.toList
+//seed_the_first_word "555555555a5555555"
+//update_the_dictionaries ["1d1";"d222c22";"c3333b33333";"b4444444a444444444"] 0
+//printBlock 30 -30 -30 30
+//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 
 
 
 
-update_the_dictionaries ["cruel";"cruelA"] 0 |> ignore
+seed_the_first_word "aaaaaaaaaaaaaaaaa"
+update_the_dictionaries ["aaaaa"; "ba";"cca";"ddda";"eeeea"] 0
+printBlock 30 -30 -30 30
+for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 
-//update_the_dictionaries source_words.Tail 0 |> ignore
+
+
+
+
+
+
+
+
 
 
 
