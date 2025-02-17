@@ -61,7 +61,7 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
-type For_dictionary_update = {intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) list ; new_word_direction:Direction}
+type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) list ; new_word_direction:Direction}
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
@@ -93,9 +93,9 @@ type AccStatus =
 | Final
 | Intermediate
 
-type Word_state4  = { status: AccStatus; for_dictionary_update: For_dictionary_update list }
-type Word_state5  = { for_dictionary_update: For_dictionary_update list }
-
+type Word_state4  = { status: AccStatus; word:string; for_dictionary_update: For_dictionary_update list }
+type Word_state5  = { word:string; for_dictionary_update: For_dictionary_update list }
+type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update option }
 
 type failed_list = seq<string>
 
@@ -262,7 +262,8 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
        coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) &&
        coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) then
 
-       Some( {intersection_coordinate=gridCoordinate;
+       Some( {word=word;
+              intersection_coordinate=gridCoordinate;
               coordinates_of_the_word=coordinatesStartUpToIntersectingLetterAndChar@[(gridCoordinate,word.[offsetOfIntersectingLetter])]@coordinatesAfterIntersectingToEndLetterAndChar;
               new_word_direction=lineOfTheWordToBeAdded} )
 
@@ -371,33 +372,32 @@ let collect_the_valid_coordinates (coordinates:seq<Word_state3>)  =
 
   |> Seq.scan(fun (state:Word_state4) xy -> match xy with
                                             | DATA3b a   -> match state.status with
-                                                            | Final        -> {Word_state4.status=Intermediate; for_dictionary_update=[a.for_dictionary_update]}
+                                                            | Final        -> {Word_state4.status=Intermediate; word=a.word; for_dictionary_update=[a.for_dictionary_update]}
                                                             | Intermediate -> {state with status=Intermediate; for_dictionary_update=state.for_dictionary_update@[a.for_dictionary_update]}
                                             | MARKER3b b -> match state.status with
-                                                            | Final        -> {state with status=Final ; for_dictionary_update=[]} // final followed by final means that flag has no preceeding valid coodinates
+                                                            | Final        -> {state with status=Final ; word=b.end_of_records_marker_for_a_word; for_dictionary_update=[]} // final followed by final means that flag has no preceeding valid coodinates
                                                             | Intermediate -> {state with status=Final} // the previous record was the last of the valid coordinates
 
-    ) ({Word_state4.status=Final; for_dictionary_update=[]})
+    ) ({Word_state4.status=Final; word=""; for_dictionary_update=[]})
   
   |> Seq.skip 1 // omit the initial state
   |> Seq.filter(fun c -> match c.status with
                          | Final -> true
                          | _ -> false)
-  |> Seq.map(fun c -> {Word_state5.for_dictionary_update = c.for_dictionary_update} )
+  |> Seq.map(fun c -> {Word_state5.word=c.word; for_dictionary_update = c.for_dictionary_update} )
 
-
-  WORKING HERE
 
 let return_one_coordinate_for_one_word (dictionary_data:seq<Word_state5>) =
 
  seq { for c in dictionary_data do
  
-       let valid_XY_count = c.for_dictionary_update.Length
-       let indx = random.Next(0, valid_XY_count)
-       let selected_a_Coordinate = c.for_dictionary_update.[indx]
-       yield selected_a_Coordinate
+       match c.for_dictionary_update with
+       | [] -> yield {Word_state6.word =c.word; for_dictionary_update=None }
+       | _  -> let valid_XY_count = c.for_dictionary_update.Length
+               let indx = random.Next(0, valid_XY_count)
+               let selected_a_Coordinate = c.for_dictionary_update.[indx]
+               yield {Word_state6.word =c.word; for_dictionary_update=Some(selected_a_Coordinate) }
      }
-
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
@@ -422,17 +422,16 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
     ()
 
-let Update_dictionaries_output_failed_words (valid_coordinate:seq<Word_state3>) =
+let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
     printfn "Update_dictionaries_output_failed_words"
     seq {
-        for c in valid_coordinate do
-            printfn ("Update_dictionaries_output_failed_words %A %A %A %A") c.word c.letter_position c.can_add_word_here c.for_dictionary_update
+        for c in dictionary_data do
+            printfn ("Update_dictionaries_output_failed_words %A") c
             printfn "   "
-            match c.can_add_word_here with 
-            | Some(xy)    -> match c.for_dictionary_update with
-                             | Some(coordinate_info) -> do_dict_updates coordinate_info
-                             | None -> yield! Seq.empty
-            | _           -> yield c.word
+            match c.for_dictionary_update with 
+            | Some coordinate_info -> do_dict_updates coordinate_info
+                                      yield! Seq.empty
+            | _                    -> yield c.word
     }
 
 let seed_the_first_word (word:string) :unit =
@@ -449,6 +448,7 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
         source_words 
         |> returns_matching_letters_on_the_grid 
         |> return_status_of_candidate_coordinates 
+        |> collect_the_valid_coordinates
         |> return_one_coordinate_for_one_word
         |> Update_dictionaries_output_failed_words
         |> Seq.toList
