@@ -231,6 +231,26 @@ let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
             | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
             | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
 
+let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
+
+    match lineOfTheWordToBeAdded with
+    | ACROSS -> [{X=gridCoordinate.X;     Y=gridCoordinate.Y + 1} ; {X=gridCoordinate.X     ; Y=gridCoordinate.Y - 1}]
+    | DOWN   -> [{X=gridCoordinate.X - 1; Y=gridCoordinate.Y}     ; {X=gridCoordinate.X + 1 ; Y=gridCoordinate.Y}    ]
+
+let coordinate_would_append_to_a_word_at_right_angles (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
+
+    List [ for xy in (returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate ) do
+       
+           let found, res = coordinatesDict.TryGetValue xy
+
+           match found with
+           | true -> match lineOfTheWordToBeAdded with
+                     | ACROSS -> if res.Down.IsSome then yield xy
+                     | DOWN   -> if res.Across.IsSome then yield xy
+           | false -> yield! List.empty
+
+         ]
+
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
     // Note using position not offset in the movement calculations
@@ -256,11 +276,48 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
         | [] -> []
         | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
 
+
+
+    // ======================================================================================================================
+
+    // Do any of the letters to be added append to the beginning or end of an existing word?
+    // 1] read letter list and return just thoses letter that will be added to empty cells
+    // 2] return (x,y) of adjacent, right-angle, populated cells and the letter at that cell has the opposite Direction.
+
+    // example, word D is not in a valid place. As it appends to words A and B. The intersection with C and E are okay.
+
+    // Handled by coordinate_would_append_to_a_word_at_right_angles
+
+    (*
+          D
+        CCCCC       << C is the chosen intersection letter to be used to place the new word
+          D
+    AAAAAADBBBBB    << the criteria above will return A and B
+          D
+       EEEEEEE      << intersection with existing letter E. So that letter is not returned.
+          D
+
+    *)
+
+
+    let gridCellsToBePopulated =
+        
+        (coordinatesStartUpToIntersectingLetterAndChar  |> List.filter ( fun (xy,c) -> isCellAvailiable xy c Empty )) @ 
+        (coordinatesAfterIntersectingToEndLetterAndChar |> List.filter ( fun (xy,c) -> isCellAvailiable xy c Empty ))
+        |> List.map (fun (coor,_) -> coor)
+
+    let gridCellCollisions = [for xy in gridCellsToBePopulated do coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy]
+
+
+    // ======================================================================================================================
+
+
     if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&
        isCellEmpty coordinateAdjacentToStartLetter && 
        isCellEmpty coordinateAdjacentToEndLetter && 
        coordinatesStartUpToIntersectingLetterAndChar  |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) &&
-       coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) then
+       coordinatesAfterIntersectingToEndLetterAndChar |> List.forall ( fun (xy,c) -> isCellAvailiable xy c LetterOrEmpty) &&
+       gridCellCollisions.IsEmpty then
 
        Some( {word=word;
               intersection_coordinate=gridCoordinate;
@@ -383,6 +440,21 @@ let seed_the_first_word (word:string) :unit =
 
     do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
 
+
+let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_coordinate:Coordinate) :unit =
+    
+    match direction with
+
+    | ACROSS -> let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
+                let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+                do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
+
+    | DOWN   -> let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) DOWN ToEnd)
+                let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+                do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=DOWN}
+
+
+
 let rec update_the_dictionaries (source_words:string list) (length_of_previous_failed_list:int) =
 
     let failed_list =
@@ -477,10 +549,36 @@ let debug b =
 
 
 
-seed_the_first_word source_words_2.Head
-update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
-printBlock 300 -300 -300 300
+//seed_the_first_word source_words_2.Head
+//update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+//printBlock 300 -300 -300 300
+//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
+
+
+
+
+    (*
+          D
+        CCCCC       << C is the chosen intersection letter to be used to place the new word
+          D
+     AAAAADBBBBB    << the criteria above will return A and B
+          D
+       EEEEEE       << intersection with existing letter E. So that letter is not returned.
+          D
+
+    *)
+
+TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2})
+TESTING_seed_the_first_word "aaaaa" ACROSS ({X=(-5) ; Y=0})
+TESTING_seed_the_first_word "bbbbb" ACROSS ({X=1    ; Y=0})
+TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)})
+
+update_the_dictionaries ["dcddded"] 0
+
+printBlock 30 -30 -30 30
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
+
+
 
 
 
