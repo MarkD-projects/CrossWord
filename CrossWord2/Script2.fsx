@@ -306,7 +306,7 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
         (coordinatesAfterIntersectingToEndLetterAndChar |> List.filter ( fun (xy,c) -> isCellAvailiable xy c Empty ))
         |> List.map (fun (coor,_) -> coor)
 
-    let gridCellCollisions = [for xy in gridCellsToBePopulated do coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy]
+    let gridCellCollisions = [for xy in gridCellsToBePopulated do yield! (coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy)] 
 
 
     // ======================================================================================================================
@@ -434,6 +434,9 @@ let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
 
 let seed_the_first_word (word:string) :unit =
     
+    letters.Clear()
+    coordinatesDict.Clear()
+
     let starting_coordinate = {X=0;Y=0}   
     let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
     let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
@@ -441,8 +444,12 @@ let seed_the_first_word (word:string) :unit =
     do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
 
 
-let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_coordinate:Coordinate) :unit =
-    
+let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_coordinate:Coordinate) (clear:string option) :unit =
+  
+    if clear = Some "clear" then
+        letters.Clear()
+        coordinatesDict.Clear()
+
     match direction with
 
     | ACROSS -> let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
@@ -485,7 +492,36 @@ let helperprintout x y =
      | true -> res.Letter
      | false -> ' '
 
-let printBlock y_top y_bottom x_left x_right =
+let lowestX() =
+
+    match coordinatesDict.Count with
+    | c when c > 0 -> seq { for kvp in coordinatesDict do yield kvp.Key.X } |> Seq.min
+    | _            -> 0
+
+let highestX() =
+
+    match coordinatesDict.Count with
+    | c when c > 0 -> seq { for kvp in coordinatesDict do yield kvp.Key.X } |> Seq.max
+    | _            -> 0
+
+let lowestY() =
+
+    match coordinatesDict.Count with
+    | c when c > 0 -> seq { for kvp in coordinatesDict do yield kvp.Key.Y } |> Seq.min
+    | _            -> 0
+
+let highestY() =
+
+    match coordinatesDict.Count with
+    | c when c > 0 -> seq { for kvp in coordinatesDict do yield kvp.Key.Y } |> Seq.max
+    | _            -> 0
+
+let printBlock() =
+
+    let y_top     = highestY()
+    let y_bottom  = lowestY()
+    let x_right   = highestX()
+    let x_left    = lowestX()
 
     for y in y_top .. -1 .. y_bottom do
 
@@ -549,11 +585,12 @@ let debug b =
 
 
 
-//seed_the_first_word source_words_2.Head
-//update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
-//printBlock 300 -300 -300 300
-//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
+TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
+update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+printBlock()
 
+for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
+for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 
 
 
@@ -568,19 +605,85 @@ let debug b =
 
     *)
 
-TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2})
-TESTING_seed_the_first_word "aaaaa" ACROSS ({X=(-5) ; Y=0})
-TESTING_seed_the_first_word "bbbbb" ACROSS ({X=1    ; Y=0})
-TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)})
+//// fail
+//TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2}) (Some("clear"))
+//TESTING_seed_the_first_word "aaaaa" ACROSS ({X=(-5) ; Y=0}) None
+//TESTING_seed_the_first_word "bbbbb" ACROSS ({X=1    ; Y=0}) None
+//TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)}) None
+//update_the_dictionaries ["dcddded"] 0
 
-update_the_dictionaries ["dcddded"] 0
+//// fail
+//TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2})   (Some("clear"))
+//TESTING_seed_the_first_word "aaaa" ACROSS ({X=(-5) ; Y=0})     None
+//TESTING_seed_the_first_word "bbbbb" ACROSS ({X=1    ; Y=0})    None
+//TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)}) None
+//update_the_dictionaries ["dcddded"] 0
 
-printBlock 30 -30 -30 30
+//// fail
+//TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2})   (Some("clear"))
+//TESTING_seed_the_first_word "aaaaa" ACROSS ({X=(-5) ; Y=0})    None
+//TESTING_seed_the_first_word "bbbbb" ACROSS ({X=2    ; Y=0})    None
+//TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)}) None
+//update_the_dictionaries ["dcddded"] 0
+
+//// passes
+//TESTING_seed_the_first_word "ccccc" ACROSS ({X=(-2) ; Y=2})   (Some("clear"))
+//TESTING_seed_the_first_word "aaaa" ACROSS ({X=(-5) ; Y=0})     None
+//TESTING_seed_the_first_word "bbbbb" ACROSS ({X=2    ; Y=0})    None
+//TESTING_seed_the_first_word "eeeee" ACROSS ({X=(-3) ; Y=(-2)}) None
+//update_the_dictionaries ["dcddded"] 0
+
+
+// try to add CCCCCCX but this appends to the end of AAAAAA
+
+(*
+
+
+            A
+            A
+            A
+            A
+            A    B
+                 X
+                 B
+
+*)
+
+// fail
+//TESTING_seed_the_first_word "aaaaa" DOWN ({X=0 ; Y=0})   (Some("clear"))
+//TESTING_seed_the_first_word "bxb" DOWN ({X=(5) ; Y=(-4)})     None
+//update_the_dictionaries ["ccccccx"] 0
+
+////pass
+//TESTING_seed_the_first_word "aaaa" DOWN ({X=0 ; Y=0})   (Some("clear"))
+//TESTING_seed_the_first_word "bxb" DOWN ({X=(5) ; Y=(-4)})     None
+//update_the_dictionaries ["ccccccx"] 0
+
+
+
+(*
+
+     AAAAA
+
+         BXB
+
+*)
+
+//// fail
+//TESTING_seed_the_first_word "aaaaa" ACROSS ({X=0 ; Y=0})   (Some("clear"))
+//TESTING_seed_the_first_word "bxb" ACROSS ({X=(4) ; Y=(-2)})     None
+//update_the_dictionaries ["ccccccx"] 0
+
+//// pass
+//TESTING_seed_the_first_word "aaaa" ACROSS ({X=0 ; Y=0})   (Some("clear"))
+//TESTING_seed_the_first_word "bxb" ACROSS ({X=(4) ; Y=(-2)})     None
+//update_the_dictionaries ["ccccccx"] 0
+
+
+
+
+printBlock 
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
-
-
-
-
 
 
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value

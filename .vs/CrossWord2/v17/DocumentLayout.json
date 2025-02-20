@@ -18,8 +18,12 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
@@ -28,9 +32,10 @@
               "RelativeDocumentMoniker": "CrossWord2\\Script1.fsx",
               "ToolTip": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script1.fsx",
               "RelativeToolTip": "CrossWord2\\Script1.fsx",
-              "ViewState": "AgIAADYAAAAAAAAAAAAiwEkAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADYAAAAAAAAAAAAiwE0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-02-17T15:48:04.926Z"
+              "WhenOpened": "2025-02-17T15:48:04.926Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -40,7 +45,7 @@
               "RelativeDocumentMoniker": "CrossWord2\\Script2.fsx",
               "ToolTip": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script2.fsx",
               "RelativeToolTip": "CrossWord2\\Script2.fsx",
-              "ViewState": "AgIAANgBAAAAAAAAAAAwwPEBAAALAAAAAAAAAA==",
+              "ViewState": "AgIAACUBAAAAAAAAAAAAADgBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2025-02-15T21:11:20.512Z",
               "EditorCaption": ""

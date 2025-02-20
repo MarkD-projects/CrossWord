@@ -75,3 +75,9 @@ seq {yield 'a'; yield 'b'; yield 'c'; yield 'd'; yield 'e'; yield 'f'; }
 |> Seq.reduce (fun a b -> a + b )
 
 
+[ yield seq []; yield seq []; yield seq ["a"]; yield seq []; yield seq [] ] |> List.collect (fun a -> a) |> List.iter(fun a -> printfn "%A" a)
+
+[ ["a";"b"];["a";"b"];["a";"b"] ] |> List.collect (fun a -> a) |> List.iter(fun a -> printfn "%A" a)
+
+
+//|> List.iter(fun a -> printfn "%A" a)
