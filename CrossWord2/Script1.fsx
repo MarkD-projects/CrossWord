@@ -10,7 +10,7 @@ let printText state  =  printfn "xxxx %A" state
 let timer = new Timer(printText, null, 0, 10000)
 
 
-
+printfn "%-20s %-10i %-10i " "aaaaaa" 24 25
 
 
 let alist = ["aa";"bb";"cc";"dd";"ee"]

@@ -3,6 +3,7 @@ open System
 open System.IO
 open System.Collections.Generic
 open System.Threading
+open System.Diagnostics
 
 // https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 
@@ -100,15 +101,24 @@ type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update 
 
 type failed_list = seq<string>
 
-let printText state =  printfn "%A" word
-let timer = new Timer(printText, null, 0, 20000)
+// DEBUG ============================================
+let mutable word_to_print = ""
+let mutable word_count_last_batch = 0
+let mutable word_count_this_batch = 0
+let printText state = 
+    printfn "%-20s %-10i %-10i " word_to_print word_count_this_batch (word_count_this_batch - word_count_last_batch)
+    word_count_last_batch <- word_count_this_batch
+    word_count_this_batch <- 0
+let timer = new Timer(printText, null, 0, 10000)
+// ==================================================
 
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
 
     seq {
         for word in source_words do
 
-            let printText state =  printfn "%A" word
+            word_to_print <- word
+            word_count_this_batch <- (word_count_this_batch + 1)
 
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
@@ -634,12 +644,12 @@ for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 
 
 
-printBlock 
-for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
+//printBlock 
+//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 
 
-for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
-for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
+//for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
+//for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
 
 
 // next steps
