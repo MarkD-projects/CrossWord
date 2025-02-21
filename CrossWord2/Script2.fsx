@@ -2,6 +2,7 @@
 open System
 open System.IO
 open System.Collections.Generic
+open System.Threading
 
 // https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 
@@ -99,84 +100,16 @@ type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update 
 
 type failed_list = seq<string>
 
-//let update_the_letters_the_dictionary (source_words_2: string list) =
-
-//    let rec read_the_characters (x:int) (y:int) (position:int) (first_word:string) : unit =
-
-//        match position < first_word.Length with
-//        | true -> try
-//                     let current_value = letters.Item(first_word.[position])
-//                     let new_value = current_value@[{X=x;Y=y}]
-//                     letters.Item(first_word.[position]) <- new_value
-//                  with
-//                  | :? System.Collections.Generic.KeyNotFoundException as ex -> 
-//                       letters.Add(first_word[position], [{X=x;Y=y}])
-
-//                  read_the_characters (x+1) y (position+1) first_word
-
-//        | false -> ()
-
-//    read_the_characters 0 0 0 source_words_2.Head
-
-//update_the_letters_the_dictionary source_words
-//update_the_letters_the_dictionary source_words_2
-
-//let printDictionary (dict: Dictionary<'Key, 'Value>) =
-//    for KeyValue(key, value) in dict do
-//        printfn "Key: %A, Value: %A" key value
-
-//printDictionary letters
-
-//let source_words = [ "hello"; "world"; "goodbye"; "cruel"; "worldx" ]
-
-//let seed_the_dictionaries =
-
-//    letters.Add('a', [{X=1;Y=2}])
-//    letters.Add('b', [{X=2;Y=2}])   
-//    letters.Add('c', [{X=3;Y=2}])   
-//    letters.Add('d', [{X=4;Y=2}])   
-//    letters.Add('e', [{X=5;Y=2}])   
-//    letters.Add('f', [{X=6;Y=2}])
-//    letters.Add('g', [{X=7;Y=2}])
-//    letters.Add('h', [{X=8;Y=2}])
-//    letters.Add('i', [{X=9;Y=2}])
-//    letters.Add('j', [{X=10;Y=2}])
-//    letters.Add('k', [{X=11;Y=2}])
-//    letters.Add('l', [{X=12;Y=2}])
-//    letters.Add('m', [{X=13;Y=2}])
-//    letters.Add('n', [{X=14;Y=2}])
-//    letters.Add('o', [{X=15;Y=2}])
-//    letters.Add('p', [{X=16;Y=2}])
-//    letters.Add('q', [{X=17;Y=2}])
-//    letters.Add('r', [{X=18;Y=2}])
-//    letters.Add('s', [{X=19;Y=2}])
-//    letters.Add('t', [{X=20;Y=2}])
-//    letters.Add('u', [{X=21;Y=2}])
-//    letters.Add('v', [{X=22;Y=2}])
-//    letters.Add('w', [{X=23;Y=2}])
-//    letters.Add('x', [{X=24;Y=2}])
-//    letters.Add('y', [{X=25;Y=2}])
-//    letters.Add('z', [{X=26;Y=2}])
-
-//let return_a_word_records (word:string) : seq<Word_state2> =
-
-//    seq {
-//            printfn "return_a_word_records %A " word
-//            let wordAsArray = word.ToCharArray()
-//            for i = 0 to wordAsArray.Length - 1 do
-//                    printfn "return_a_word_records %A " word.[i]
-//                    let found, res1 = letters.TryGetValue word.[i]
-//                    match found with
-//                    | true -> for xy in res1 do
-//                                yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=Some xy }
-//                    | _    -> yield { Word_state2.word=word; letter_position=i; candidate_Coordinates=None }
-//        }
+let printText state =  printfn "%A" word
+let timer = new Timer(printText, null, 0, 20000)
 
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
 
     seq {
         for word in source_words do
-            //printfn "returns_matching_letters_on_the_grid %A " word
+
+            let printText state =  printfn "%A" word
+
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
                     //printfn "return_a_word_records %A " word.[i]
@@ -237,16 +170,28 @@ let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coo
     | ACROSS -> [{X=gridCoordinate.X;     Y=gridCoordinate.Y + 1} ; {X=gridCoordinate.X     ; Y=gridCoordinate.Y - 1}]
     | DOWN   -> [{X=gridCoordinate.X - 1; Y=gridCoordinate.Y}     ; {X=gridCoordinate.X + 1 ; Y=gridCoordinate.Y}    ]
 
-let coordinate_would_append_to_a_word_at_right_angles (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
+//let coordinate_would_append_to_a_word_at_right_angles (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
+
+//    List [ for xy in (returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate ) do
+       
+//           let found, res = coordinatesDict.TryGetValue xy
+
+//           match found with
+//           | true -> match lineOfTheWordToBeAdded with
+//                     | ACROSS -> if res.Down.IsSome then yield xy
+//                     | DOWN   -> if res.Across.IsSome then yield xy
+//           | false -> yield! List.empty
+
+//         ]
+
+let added_letter_would_be_adjacent_to_a_word (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
 
     List [ for xy in (returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate ) do
        
            let found, res = coordinatesDict.TryGetValue xy
 
            match found with
-           | true -> match lineOfTheWordToBeAdded with
-                     | ACROSS -> if res.Down.IsSome then yield xy
-                     | DOWN   -> if res.Across.IsSome then yield xy
+           | true  -> yield xy
            | false -> yield! List.empty
 
          ]
@@ -306,8 +251,15 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
         (coordinatesAfterIntersectingToEndLetterAndChar |> List.filter ( fun (xy,c) -> isCellAvailiable xy c Empty ))
         |> List.map (fun (coor,_) -> coor)
 
-    let gridCellCollisions = [for xy in gridCellsToBePopulated do yield! (coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy)] 
+    // let gridCellCollisions = [for xy in gridCellsToBePopulated do yield! (coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy)] 
 
+    // ======================================================================================================================
+
+    // gridCellCollisions is to be replaced with a check that there are no adjacent letters along the side of the word.
+    // the coding difference is that those letters can be flagged as ACROSS or DOWN and not just at right-angles.
+    // note, the two coordinates at the start and end of the word that is to be added are checked for being empty elsewhere.
+
+    let gridCellCollisions = [for xy in gridCellsToBePopulated do yield! (added_letter_would_be_adjacent_to_a_word lineOfTheWordToBeAdded xy)] 
 
     // ======================================================================================================================
 
@@ -423,7 +375,7 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
     ()
 
 let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
-    printfn "Update_dictionaries_output_failed_words"
+    // printfn "Update_dictionaries_output_failed_words"
     seq {
         for c in dictionary_data do
             match c.for_dictionary_update with 
@@ -586,12 +538,12 @@ let debug b =
 
 
 TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+//update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+update_the_dictionaries  (source_words_2.Tail) 0
 printBlock()
 
 for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
-
 
 
     (*

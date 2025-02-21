@@ -1,5 +1,15 @@
 ﻿
 
+open System
+open System.IO
+open System.Collections.Generic
+open System.Threading
+
+let printText state  =  printfn "xxxx %A" state
+
+let timer = new Timer(printText, null, 0, 10000)
+
+
 
 
 
