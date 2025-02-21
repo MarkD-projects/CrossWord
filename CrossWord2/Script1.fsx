@@ -5,6 +5,49 @@ open System.IO
 open System.Collections.Generic
 open System.Threading
 
+
+
+
+//["aaaaa";"bbbb";"ccc"]
+System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
+|> Seq.map (fun w -> seq {for c in w.ToCharArray() do yield c})
+|> Seq.collect (fun c -> c)
+|> Seq.countBy (fun c -> c)
+|> Seq.sortBy(fun (_,i) -> i )
+|> Seq.iter(fun c -> printfn "%A" c)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 let printText state  =  printfn "xxxx %A" state
 
 let timer = new Timer(printText, null, 0, 10000)

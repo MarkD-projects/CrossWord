@@ -3,12 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|c:\\users\\mark.dawson\\source\\repos\\crossword2\\crossword2\\script2.fsx||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}",
-      "RelativeMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|solutionrelative:crossword2\\script2.fsx||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|c:\\users\\mark.dawson\\source\\repos\\crossword2\\crossword2\\script1.fsx||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}",
-      "RelativeMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|solutionrelative:crossword2\\script1.fsx||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}"
+      "AbsoluteMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|c:\\users\\mark.dawson\\source\\repos\\crossword2\\crossword2\\program.fs||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}",
+      "RelativeMoniker": "D:0:0:{D610ECB5-D309-451F-9C0E-368D8E6F0FF3}|CrossWord2\\CrossWord2.fsproj|solutionrelative:crossword2\\program.fs||{8A5AA6CF-46E3-4520-A70A-7393D15233E9}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +14,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -26,28 +22,15 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Script1.fsx",
-              "DocumentMoniker": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script1.fsx",
-              "RelativeDocumentMoniker": "CrossWord2\\Script1.fsx",
-              "ToolTip": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script1.fsx",
-              "RelativeToolTip": "CrossWord2\\Script1.fsx",
-              "ViewState": "AgIAADYAAAAAAAAAAAAiwE0AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-02-17T15:48:04.926Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Script2.fsx",
-              "DocumentMoniker": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script2.fsx",
-              "RelativeDocumentMoniker": "CrossWord2\\Script2.fsx",
-              "ToolTip": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Script2.fsx",
-              "RelativeToolTip": "CrossWord2\\Script2.fsx",
-              "ViewState": "AgIAAEQCAAAAAAAAAAAAAE8CAABTAAAAAAAAAA==",
+              "Title": "Program.fs",
+              "DocumentMoniker": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Program.fs",
+              "RelativeDocumentMoniker": "CrossWord2\\Program.fs",
+              "ToolTip": "C:\\Users\\mark.dawson\\source\\repos\\CrossWord2\\CrossWord2\\Program.fs",
+              "RelativeToolTip": "CrossWord2\\Program.fs",
+              "ViewState": "AgIAAP0AAAAAAAAAAAAAAAUBAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-02-15T21:11:20.512Z",
+              "WhenOpened": "2025-02-21T16:58:40.083Z",
               "EditorCaption": ""
             }
           ]
