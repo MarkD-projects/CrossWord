@@ -241,6 +241,13 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
         | [] -> []
         | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
 
+    let areCellsAvailable coor =
+        coor
+        |> Seq.forall ( fun (xy,c) -> match cellStatus xy c with                                  
+                                      |MatchingLetter   -> true   
+                                      |CellStatus.Empty -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
+                                      |_                -> false )
+
     // ======================================================================================================================
 
     // Do any of the letters to be added append to the beginning or end of an existing word?
@@ -274,21 +281,17 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
     // if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&  // not required.
 
-    let areCellsAvailable coor =
-
-        coor
-        |> Seq.forall ( fun (xy,c) -> match cellStatus xy c with                                  
-                                      |MatchingLetter   -> true   
-                                      |CellStatus.Empty -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
-                                      |_                -> false )
-
     if isCellEmpty (coordinateAdjacentToStartLetter()) then 
 
        if isCellEmpty (coordinateAdjacentToEndLetter()) then
 
-          if coordinatesStartUpToIntersectingLetterAndChar() |> areCellsAvailable then
+          let coordinatesStartUpToIntersectingLetterAndChar = coordinatesStartUpToIntersectingLetterAndChar()
 
-             if coordinatesStartUpToIntersectingLetterAndChar() |> areCellsAvailable then
+          if coordinatesStartUpToIntersectingLetterAndChar |> areCellsAvailable then
+
+             let coordinatesAfterIntersectingToEndLetterAndChar = coordinatesAfterIntersectingToEndLetterAndChar()
+
+             if coordinatesAfterIntersectingToEndLetterAndChar |> areCellsAvailable then
 
                 Some( {word=word;
                        intersection_coordinate=gridCoordinate;
@@ -526,7 +529,7 @@ let debug b =
 
 
 TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-update_the_dictionaries  (source_words_2.Tail |> List.take 2000) 0
+update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
 //update_the_dictionaries  (source_words_2.Tail) 0
 
 
