@@ -7,15 +7,19 @@ open System.Diagnostics
 
 // https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 
+type Direction = ACROSS | DOWN
+
 type MatchType =
 | Letter
 | LetterOrEmpty
 | Empty
 
-type CellStatus =
+type CellContent =
 | MatchingLetter
 | NoMatchingLetter
 | Empty
+
+type CellStatus = {cellContent:CellContent ; availableDirection:Direction option}
 
 type Placed = { word:string; placed:bool}
 type Coordinate = { X: int; Y: int }
@@ -29,7 +33,6 @@ type Overall_coordinates_status =
 | NoneValid
 
 type Letter_status = Placed | Indirect
-type Direction = ACROSS | DOWN
 type DirectionOfMovement = ToStart | ToEnd
 
 type Letter_info = { Letter: char; Down: Option<Letter_status>; Across: Option<Letter_status> }
@@ -127,7 +130,6 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
 
             let wordAsArray = word.ToCharArray()
             for i = 0 to wordAsArray.Length - 1 do
-                    //printfn "return_a_word_records %A " word.[i]
                     let found, res1 = letters.TryGetValue word.[i]
                     match found with
                     | true -> for xy in res1 do
@@ -138,55 +140,37 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
 
 let random = Random()
 
-let isCellEmpty (coordinate:Coordinate) =
+let isCellEmpty (coordinate:Coordinate) = not (coordinatesDict.ContainsKey coordinate)
 
-    let found, res = coordinatesDict.TryGetValue coordinate
+//let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) = 
 
-    not found
+//     let found, res = coordinatesDict.TryGetValue coordinate
 
-let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) = 
+//     match (matchType  , found) with
+//     | Letter          , true  when res.Letter = c  -> true
+//     | Letter          , true  when res.Letter <> c -> false
+//     | Letter          , false                      -> false
+//     | LetterOrEmpty   , true  when res.Letter = c  -> true
+//     | LetterOrEmpty   , true  when res.Letter <> c -> false
+//     | LetterOrEmpty   , false                      -> true
+//     | MatchType.Empty , false                      -> true
+//     | _                                            -> false
 
-     let found, res = coordinatesDict.TryGetValue coordinate
+let directionForWordToBePlaced (res:Letter_info) =
 
-     match (matchType  , found) with
-     | Letter          , true  when res.Letter = c  -> true
-     | Letter          , true  when res.Letter <> c -> false
-     | Letter          , false                      -> false
-     | LetterOrEmpty   , true  when res.Letter = c  -> true
-     | LetterOrEmpty   , true  when res.Letter <> c -> false
-     | LetterOrEmpty   , false                      -> true
-     | MatchType.Empty , false                      -> true
-     | _                                            -> false
+     match (res.Down , res.Across) with
+     | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
+     | None   , Some x -> Some(DOWN)
+     | _               -> None
 
-let cellStatus (coordinate:Coordinate) (c:char) : CellStatus = 
-
-     let found, res = coordinatesDict.TryGetValue coordinate
-
-     match found with
-     | true  when res.Letter = c  -> MatchingLetter
-     | true  when res.Letter <> c -> NoMatchingLetter
-     | _                          -> CellStatus.Empty
-
-let directionForWordToBePlaced (coordinate:Coordinate) =
+let cellStatus (coordinate:Coordinate) (c:char) = 
 
      let found, res = coordinatesDict.TryGetValue coordinate
 
      match found with
-     | true ->  match (res.Down , res.Across) with
-                | Some x , None   -> Some(ACROSS)  // select right-angles direction to existing word
-                | None   , Some x -> Some(DOWN)
-                | _               -> None
-     | false -> None // should not get here. This subroutine only called when a dictionary key found.
-
-//let moveToCoordinates start cellCountToMove lineOfTheWord directionOfMovement =
-
-//    match cellCountToMove with
-//    | 0 -> []
-//    | _ ->  match (lineOfTheWord , directionOfMovement) with
-//            | ACROSS , ToStart -> [ for i in 1 .. cellCountToMove -> { start with X = start.X - i}] |> List.rev
-//            | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
-//            | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
-//            | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
+     | true  when res.Letter = c  -> {cellContent=MatchingLetter    ; availableDirection=directionForWordToBePlaced res}
+     | true  when res.Letter <> c -> {cellContent=NoMatchingLetter  ; availableDirection=directionForWordToBePlaced res}
+     | _                          -> {cellContent=CellContent.Empty ; availableDirection=None}
 
 let moveToCoordinates start cellCountToMove lineOfTheWord directionOfMovement =
 
@@ -201,8 +185,8 @@ let moveToCoordinates start cellCountToMove lineOfTheWord directionOfMovement =
 let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
     match lineOfTheWordToBeAdded with
-    | ACROSS -> [{X=gridCoordinate.X;     Y=gridCoordinate.Y + 1} ; {X=gridCoordinate.X     ; Y=gridCoordinate.Y - 1}]
-    | DOWN   -> [{X=gridCoordinate.X - 1; Y=gridCoordinate.Y}     ; {X=gridCoordinate.X + 1 ; Y=gridCoordinate.Y}    ]
+    | ACROSS -> seq { yield {X=gridCoordinate.X;     Y=gridCoordinate.Y + 1} ; yield {X=gridCoordinate.X     ; Y=gridCoordinate.Y - 1} }
+    | DOWN   -> seq { yield {X=gridCoordinate.X - 1; Y=gridCoordinate.Y}     ; yield {X=gridCoordinate.X + 1 ; Y=gridCoordinate.Y}     }
 
 //let coordinate_would_append_to_a_word_at_right_angles (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
 
@@ -220,13 +204,7 @@ let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coo
 
 let no_adjacent_word_to_the_added_letter (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
 
-    returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate
-    |> 
-    Seq.forall( fun xy -> let found, res = coordinatesDict.TryGetValue xy
-
-                          match not found with
-                          | true  -> true
-                          | false -> false )
+    returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate |> Seq.forall( fun xy -> isCellEmpty xy )
 
 let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
@@ -250,9 +228,9 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let isCellAvailable (xy,c) =
 
         match (cellStatus xy c) with                                  
-        |MatchingLetter   -> true   
-        |CellStatus.Empty -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
-        |_                -> false
+        |{cellContent=MatchingLetter} -> true   
+        |{cellContent=Empty         } -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
+        |_                            -> false
 
     let allCellsAvailable() = allCoordinates() |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
 
@@ -314,18 +292,12 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
 let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoordinate:Coordinate) =
 
-    let availiableDirection = directionForWordToBePlaced gridCoordinate 
+    // first checks the intersection letter. It's coordinate and it's character should always exist in the dictionary and then checks the remaining letters in the word.
 
-    //match availiableDirection with
-    //| Some x -> match isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter with     
-    //            | true  -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
-    //            | false -> failwithf "cell should be available %A %A %A " gridCoordinate word offsetOfIntersectingLetter
-    //                       None
-    //| None   -> None
-
-    match availiableDirection with
-    | Some x -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
-    | None   -> None
+    match (cellStatus gridCoordinate word.[offsetOfIntersectingLetter]) with                                  
+    |{cellContent=MatchingLetter; availableDirection=Some(x)} -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
+    |{cellContent=MatchingLetter; availableDirection=None}    -> None
+    |_                                                        -> failwithf "In areCellsAvailiable the call to cellStatus fails with parameters %A %A " gridCoordinate word.[offsetOfIntersectingLetter] ; None
 
 let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
 
@@ -527,10 +499,10 @@ let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
     update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
+  //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
-  //update_the_dictionaries  (source_words_2.Tail) 0
     timer.Dispose() |> ignore
-    Console.ReadLine() |> ignore
+  //Console.ReadLine() |> ignore
  
 
 main()
