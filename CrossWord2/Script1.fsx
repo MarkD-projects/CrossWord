@@ -18,9 +18,9 @@ System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"
 
 
 
-
-
-
+Seq.append [1; 2] [3; 4]
+Seq.append (seq {yield 1 ; yield 2}) (seq {yield 3 ; yield 4})
+Seq.append (Seq.empty) (seq {yield 3 ; yield 4})
 
 
 

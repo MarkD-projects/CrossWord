@@ -178,15 +178,25 @@ let directionForWordToBePlaced (coordinate:Coordinate) =
                 | _               -> None
      | false -> None // should not get here. This subroutine only called when a dictionary key found.
 
-let moveToCoordinate start cellCountToMove lineOfTheWord directionOfMovement =
+//let moveToCoordinates start cellCountToMove lineOfTheWord directionOfMovement =
+
+//    match cellCountToMove with
+//    | 0 -> []
+//    | _ ->  match (lineOfTheWord , directionOfMovement) with
+//            | ACROSS , ToStart -> [ for i in 1 .. cellCountToMove -> { start with X = start.X - i}] |> List.rev
+//            | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
+//            | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
+//            | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
+
+let moveToCoordinates start cellCountToMove lineOfTheWord directionOfMovement =
 
     match cellCountToMove with
-    | 0 -> []
+    | 0 -> Seq.empty
     | _ ->  match (lineOfTheWord , directionOfMovement) with
-            | ACROSS , ToStart -> [ for i in 1 .. cellCountToMove -> { start with X = start.X - i}] |> List.rev
-            | ACROSS , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with X = start.X + i}]
-            | DOWN   , ToStart -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y + i}] |> List.rev
-            | DOWN   , ToEnd   -> [ for i in 1 .. cellCountToMove -> { start with Y = start.Y - i}] 
+            | ACROSS , ToStart -> seq { for i in cellCountToMove .. -1 .. 1 do yield { start with X = start.X - i} }
+            | ACROSS , ToEnd   -> seq { for i in 1 .. cellCountToMove       do yield { start with X = start.X + i} }
+            | DOWN   , ToStart -> seq { for i in cellCountToMove .. -1 .. 1 do yield { start with Y = start.Y + i} }
+            | DOWN   , ToEnd   -> seq { for i in 1 .. cellCountToMove       do yield { start with Y = start.Y - i} } 
 
 let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
@@ -226,20 +236,37 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let NumberOflettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
     let NumberOflettersAfterTheIntersectionLetter  = word.Length - positionOfIntersectingLetter
 
-    let coordinateAdjacentToStartLetter() = (moveToCoordinate gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart ).Head
-    let coordinateAdjacentToEndLetter()   = (moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd   ).Head
+    let coordinateAdjacentToStartLetter = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
+    let coordinateAdjacentToEndLetter   = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
+
+    let coordinatesStartUpToIntersectingLetter  = moveToCoordinates gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
+    let coordinatesAfterIntersectingToEndLetter = moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
+
+    let allCoordinates = Seq.append coordinatesStartUpToIntersectingLetter coordinatesAfterIntersectingToEndLetter
 
     let coordinatesStartUpToIntersectingLetterAndChar() = 
-        let coordinatesStartUpToIntersectingLetter = moveToCoordinate gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
         match coordinatesStartUpToIntersectingLetter with
         | [] -> []
         | _ ->  [for i in 0 .. coordinatesStartUpToIntersectingLetter.Length - 1 -> (coordinatesStartUpToIntersectingLetter.[i] , word.[i]) ]
 
     let coordinatesAfterIntersectingToEndLetterAndChar() =
-        let coordinatesAfterIntersectingToEndLetter        = moveToCoordinate gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
         match coordinatesAfterIntersectingToEndLetter with
         | [] -> []
         | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     let areCellsAvailable coor =
         coor
@@ -529,7 +556,7 @@ let debug b =
 
 
 TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0
+update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
 //update_the_dictionaries  (source_words_2.Tail) 0
 
 
