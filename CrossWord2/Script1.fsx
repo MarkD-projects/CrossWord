@@ -23,8 +23,10 @@ Seq.append (seq {yield 1 ; yield 2}) (seq {yield 3 ; yield 4})
 Seq.append (Seq.empty) (seq {yield 3 ; yield 4})
 
 
-
-
+// seq {yield 1 ; yield 2 ; yield 3 ; yield 4}
+Seq.empty
+|> Seq.mapi (fun i coordinate ->  printfn "%A %A" i coordinate )
+|> Seq.isEmpty
 
 
 
@@ -128,7 +130,7 @@ seq {yield 'a'; yield 'b'; yield 'c'; yield 'd'; yield 'e'; yield 'f'; }
 |> Seq.reduce (fun a b -> a + b )
 
 
-[ yield seq []; yield seq []; yield seq ["a"]; yield seq []; yield seq [] ] |> List.collect (fun a -> a) |> List.iter(fun a -> printfn "%A" a)
+[ yield seq []; yield seq []; yield seq ["a"]; yield seq []; yield seq [] ] |> Seq.iter(fun a -> printfn "%A" a)
 
 [ ["a";"b"];["a";"b"];["a";"b"] ] |> List.collect (fun a -> a) |> List.iter(fun a -> printfn "%A" a)
 

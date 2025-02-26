@@ -68,7 +68,7 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
-type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) list ; new_word_direction:Direction}
+type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
@@ -236,44 +236,25 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let NumberOflettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
     let NumberOflettersAfterTheIntersectionLetter  = word.Length - positionOfIntersectingLetter
 
-    let coordinateAdjacentToStartLetter = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
-    let coordinateAdjacentToEndLetter   = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
+    let coordinateAdjacentToStartLetter() = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
+    let coordinateAdjacentToEndLetter()   = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
 
-    let coordinatesStartUpToIntersectingLetter  = moveToCoordinates gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
-    let coordinatesAfterIntersectingToEndLetter = moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
+    let coordinatesStartUpToIntersectingLetter()  = moveToCoordinates gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
+    let coordinatesAfterIntersectingToEndLetter() = moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
 
-    let allCoordinates = Seq.append coordinatesStartUpToIntersectingLetter coordinatesAfterIntersectingToEndLetter
+    let coordinatesStartUpToIntersectingLetterAndChar()  = coordinatesStartUpToIntersectingLetter()  |> Seq.mapi (fun i coordinate -> (coordinate , word.[i]) )
+    let coordinatesAfterIntersectingToEndLetterAndChar() = coordinatesAfterIntersectingToEndLetter() |> Seq.mapi (fun i coordinate -> (coordinate , word.[offsetOfIntersectingLetter + 1 + i]) )
 
-    let coordinatesStartUpToIntersectingLetterAndChar() = 
-        match coordinatesStartUpToIntersectingLetter with
-        | [] -> []
-        | _ ->  [for i in 0 .. coordinatesStartUpToIntersectingLetter.Length - 1 -> (coordinatesStartUpToIntersectingLetter.[i] , word.[i]) ]
+    let allCoordinates() = Seq.append (coordinatesStartUpToIntersectingLetterAndChar()) (coordinatesAfterIntersectingToEndLetterAndChar())
 
-    let coordinatesAfterIntersectingToEndLetterAndChar() =
-        match coordinatesAfterIntersectingToEndLetter with
-        | [] -> []
-        | _ ->  [for i in 0  .. coordinatesAfterIntersectingToEndLetter.Length - 1 -> (coordinatesAfterIntersectingToEndLetter.[i] , word.[offsetOfIntersectingLetter + 1 + i]) ]
+    let isCellAvailable (xy,c) =
 
+        match (cellStatus xy c) with                                  
+        |MatchingLetter   -> true   
+        |CellStatus.Empty -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
+        |_                -> false
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    let areCellsAvailable coor =
-        coor
-        |> Seq.forall ( fun (xy,c) -> match cellStatus xy c with                                  
-                                      |MatchingLetter   -> true   
-                                      |CellStatus.Empty -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
-                                      |_                -> false )
+    let allCellsAvailable() = allCoordinates() |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
 
     // ======================================================================================================================
 
@@ -306,40 +287,30 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
     // ======================================================================================================================
 
-    // if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&  // not required.
+ // if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&  // not required.
 
     if isCellEmpty (coordinateAdjacentToStartLetter()) then 
 
        if isCellEmpty (coordinateAdjacentToEndLetter()) then
 
-          let coordinatesStartUpToIntersectingLetterAndChar = coordinatesStartUpToIntersectingLetterAndChar()
+          if allCellsAvailable() then
 
-          if coordinatesStartUpToIntersectingLetterAndChar |> areCellsAvailable then
-
-             let coordinatesAfterIntersectingToEndLetterAndChar = coordinatesAfterIntersectingToEndLetterAndChar()
-
-             if coordinatesAfterIntersectingToEndLetterAndChar |> areCellsAvailable then
-
-                Some( {word=word;
-                       intersection_coordinate=gridCoordinate;
-                       coordinates_of_the_word=coordinatesStartUpToIntersectingLetterAndChar@[(gridCoordinate,word.[offsetOfIntersectingLetter])]@coordinatesAfterIntersectingToEndLetterAndChar;
-                       new_word_direction=lineOfTheWordToBeAdded} )
-
-             else
-
-                None
-
+             Some( {word=word;
+                    intersection_coordinate=gridCoordinate;
+                    coordinates_of_the_word=Seq.append (allCoordinates()) (seq { yield (gridCoordinate,word.[offsetOfIntersectingLetter]) });
+                    new_word_direction=lineOfTheWordToBeAdded} )    
+  
           else
 
              None
-
+     
        else
 
-          None
-     
-     else
+          None 
 
-        None 
+    else
+
+       None
 
 let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoordinate:Coordinate) =
 
@@ -451,8 +422,8 @@ let seed_the_first_word (word:string) :unit =
     coordinatesDict.Clear()
 
     let starting_coordinate = {X=0;Y=0}   
-    let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
-    let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+    let coordinate_list_for_the_word        = seq { yield starting_coordinate ; yield! (moveToCoordinates starting_coordinate (word.Length - 1) ACROSS ToEnd) }
+    let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
 
     do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
 
@@ -465,12 +436,12 @@ let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_co
 
     match direction with
 
-    | ACROSS -> let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) ACROSS ToEnd)
-                let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+    | ACROSS -> let coordinate_list_for_the_word = seq { yield starting_coordinate ; yield! (moveToCoordinates starting_coordinate (word.Length - 1) ACROSS ToEnd) }
+                let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
                 do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
 
-    | DOWN   -> let coordinate_list_for_the_word = [starting_coordinate]@(moveToCoordinate starting_coordinate (word.Length - 1) DOWN ToEnd)
-                let coordinate_list_for_the_wordAndChar = [for i in 0 .. coordinate_list_for_the_word.Length - 1 -> (coordinate_list_for_the_word.[i] , word.[i])]
+    | DOWN   -> let coordinate_list_for_the_word = seq { yield starting_coordinate ; yield! (moveToCoordinates starting_coordinate (word.Length - 1) DOWN ToEnd) }
+                let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
                 do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=DOWN}
 
 
@@ -488,7 +459,6 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
 
     printfn ("failed_list length ========================================= %A") failed_list.Length
     printfn ("failed_list %A") failed_list
-    Console.ReadLine() |> ignore
 
     match failed_list.Length with
     | l when l = length_of_previous_failed_list && l <> 0 -> failed_list // these words cannot be added.
@@ -553,14 +523,18 @@ let debug b =
              yield a
        }
 
+let main() =
 
+    TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
+    update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
+    printfn "========== END =================="
+  //update_the_dictionaries  (source_words_2.Tail) 0
+    timer.Dispose() |> ignore
+    Console.ReadLine() |> ignore
+ 
 
-TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
-//update_the_dictionaries  (source_words_2.Tail) 0
-
-
-//printBlock()
+main()
+printBlock()
 
 //for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 //for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
