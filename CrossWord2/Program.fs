@@ -79,15 +79,13 @@ let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
-
-type Word_state2_data   = { word: string; letter_position: int; candidate_Coordinate: Coordinate option }
-type Word_state2_marker = { end_of_records_marker_for_a_word: string}
-type Word_state2 =
-| DATA2   of Word_state2_data
-| MARKER2 of Word_state2_marker
-
-
 type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_update: For_dictionary_update} 
+
+//type Word_state2_data   = { word: string; letter_position: int; candidate_Coordinate: Coordinate option; for_dictionary_update: For_dictionary_update option }
+//type Word_state2_marker = { end_of_records_marker_for_a_word: string}
+//type Word_state2 =
+//| DATA2   of Word_state2_data
+//| MARKER2 of Word_state2_marker
 
 
 type Word_state3_data   = { word: string; letter_position: int; position_on_the_grid: Position_on_the_grid option}
@@ -114,59 +112,26 @@ type Word_state5  = { word:string; for_dictionary_update: For_dictionary_update 
 type failed_list = seq<string>
 
 // DEBUG ============================================
+let consoleLock = obj()
 let mutable word_to_print = ""
+let mutable word_count = 0
+let mutable availableXYcounter = 0
 let mutable word_count_last_batch = 0
 let mutable word_count_this_batch = 0
+
 let printText state = 
-    printfn "%-20s %-10i %-10i " word_to_print word_count_this_batch (word_count_this_batch - word_count_last_batch)
+    lock consoleLock (fun () -> printfn "%-20s  %-10i  availiable %-10i " word_to_print word_count_this_batch availableXYcounter)
     word_count_last_batch <- word_count_this_batch
     word_count_this_batch <- 0
-let timer = new Timer(printText, null, 0, 10000)
+
+let printCount state =
+    lock consoleLock (fun () -> printfn "%A" word_count)
+
+let timer  = new Timer(printText, null, 0,  5000)
+let timer2 = new Timer(printCount, null, 0, 5000)
 // ==================================================
 
-let xy_selection_limit = 750
-
-let limit_matching_XY_per_word (data:Word_state2 seq) =
-
-        data 
-
-        |> Seq.scan (fun (data,count) x -> match x with
-                                           | DATA2 a -> match a.candidate_Coordinate with
-                                                        | Some a -> match count with
-                                                                    | count when count < xy_selection_limit -> ( Some x , (count + 1) )
-                                                                    | _                                     -> ( None   , count       ) // no more candidate xy for a word
-                                                        | None   -> ( Some x , count)
-                                           | _       -> ( None , count ) )   (None , 0)
-
-        |> Seq.map (fun (data,count) -> data)
-
-        |> Seq.choose id
-
-let limit_matching_XY_per_letter (word:string) =
-
-    seq {
-                let wordAsArray = word.ToCharArray()
-
-                for i = 0 to wordAsArray.Length - 1 do
-                        let found, res1 = letters.TryGetValue word.[i]
-                        match found with
-                        | true -> let xx = seq { for xy in res1 do yield DATA2 { word=word; letter_position=i; candidate_Coordinate=Some xy } } |> Seq.truncate xy_selection_limit
-                                  yield! xx
-                        | _    -> yield DATA2 { word=word; letter_position=i; candidate_Coordinate=None }
-        }
-
-let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
-
-        seq {
-              for word in source_words do
-
-                  word_to_print <- word
-                  word_count_this_batch <- (word_count_this_batch + 1)
-
-                  yield! (word |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
-
-                  yield MARKER2 {end_of_records_marker_for_a_word=word} 
-            }
+let xy_selection_limit = 10
 
 let random = Random()
 
@@ -329,20 +294,23 @@ let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoord
     |{cellContent=MatchingLetter; availableDirection=None}    -> None
     |_                                                        -> failwithf "In areCellsAvailiable the call to cellStatus fails with parameters %A %A " gridCoordinate word.[offsetOfIntersectingLetter] ; None
 
-let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<Word_state3>  =
+//let return_status_of_candidate_coordinates (coordinates:seq<Word_state3>) : seq<Word_state3>  =
 
-    coordinates
-    |> Seq.scan (fun state xy -> match xy with
-                                 | DATA2 a -> match a.candidate_Coordinate with
-                                              | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
-                                              | Some c -> let here = areCellsAvailiable a.word a.letter_position c
-                                                          match here with
-                                                          | Some h -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=Some{can_add_word_here=c; for_dictionary_update=h} }
-                                                          | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
-                                 | MARKER2 b -> MARKER3 { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
+//    coordinates
+//    |> Seq.scan (fun state xy -> match xy with
+//                                 | DATA3 a -> match a.candidate_Coordinate with
+//                                              | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
+//                                            //| Some c -> let here = areCellsAvailiable a.word a.letter_position c
+//                                            //            match here with
+//                                            //            | Some h -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=Some{can_add_word_here=c; for_dictionary_update=h} }
+//                                            //            | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
+//                                              | Some c -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=Some{can_add_word_here=a.candidate_Coordinate; for_dictionary_update=a.for_dictionary_update} }
+
+
+//                                 | MARKER3 b -> MARKER3 { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
     
-    ) (DATA3 { word="";letter_position=0; position_on_the_grid=None})
-    |> Seq.skip 1 // omit the initial state
+//    ) (DATA3 { word="";letter_position=0; position_on_the_grid=None})
+//    |> Seq.skip 1 // omit the initial state
 
 let availableXYforWord_action_clear() =
 
@@ -395,6 +363,10 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
                                                                               let selectedCoordinateForDictUpdate = randomXYSelection state.availableXYcounter
                                                                               availableXYforWord_action_clear()
+
+                                                                              word_to_print         <- b.end_of_records_marker_for_a_word
+                                                                              availableXYcounter    <- state.availableXYcounter
+
                                                                               {state with status=Final; for_dictionary_update=Some(selectedCoordinateForDictUpdate)}
 
     ) ({Word_state4.status=Final; word=""; availableXYcounter=0; for_dictionary_update=None})
@@ -466,14 +438,62 @@ let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_co
                 let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
                 do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=DOWN}
 
+let limit_matching_XY_per_word (data:Word_state3 seq) =
 
+        data 
+
+        |> Seq.scan (fun (data,count) x -> match x with
+                                           | DATA3 a -> match a.position_on_the_grid with
+                                                        | Some a -> match count with
+                                                                    | count when count < xy_selection_limit -> ( Some x , (count + 1) )
+                                                                    | _                                     -> ( None   , count       ) // no more candidate xy for a word
+                                                        | None   -> ( Some x , count)
+                                           | _       -> ( None , count ) )   (None , 0)
+
+        |> Seq.map (fun (data,count) -> data)
+
+        |> Seq.choose id
+
+let limit_matching_XY_per_letter (word:string) =
+
+    seq {
+                let wordAsArray = word.ToCharArray()
+
+                for i = 0 to wordAsArray.Length - 1 do
+                        let found, res1 = letters.TryGetValue word.[i]
+                        match found with
+                        | true -> let xx = seq { for xy in res1 do let here = areCellsAvailiable word i xy
+                                                                   match here with 
+                                                                   | Some h -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; for_dictionary_update=h} }
+                                                                   | None   -> ()
+                                               } |> Seq.truncate xy_selection_limit
+                                  let yy = Seq.cache xx
+                                  match Seq.isEmpty yy with
+                                  | true  -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
+                                  | false -> yield! xx
+
+                        | _    -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
+        }
+
+let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state3> =
+
+        seq {
+              for word in source_words do
+
+                  //word_to_print <- word
+                  //word_count_this_batch <- (word_count_this_batch + 1)
+                  word_count <- word_count + 1
+
+                  yield! (word |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
+
+                  yield MARKER3 {end_of_records_marker_for_a_word=word} 
+            }
 
 let rec update_the_dictionaries (source_words:string list) (length_of_previous_failed_list:int) =
 
     let failed_list =
         source_words 
         |> returns_matching_letters_on_the_grid 
-        |> return_status_of_candidate_coordinates 
         |> collect_the_valid_coordinates_and_select_one_of_them
         |> Update_dictionaries_output_failed_words
         |> Seq.toList
@@ -547,15 +567,16 @@ let debug b =
 let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
-  //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
-    timer.Dispose() |> ignore
+    timer.Dispose()  |> ignore
+    timer2.Dispose() |> ignore
   //Console.ReadLine() |> ignore
  
 
 main()
-printBlock()
+//printBlock()
 
 //for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 //for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
