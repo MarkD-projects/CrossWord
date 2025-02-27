@@ -124,23 +124,49 @@ let printText state =
 let timer = new Timer(printText, null, 0, 10000)
 // ==================================================
 
-let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
+let xy_selection_limit = 750
+
+let limit_matching_XY_per_word (data:Word_state2 seq) =
+
+        data 
+
+        |> Seq.scan (fun (data,count) x -> match x with
+                                           | DATA2 a -> match a.candidate_Coordinate with
+                                                        | Some a -> match count with
+                                                                    | count when count < xy_selection_limit -> ( Some x , (count + 1) )
+                                                                    | _                                     -> ( None   , count       ) // no more candidate xy for a word
+                                                        | None   -> ( Some x , count)
+                                           | _       -> ( None , count ) )   (None , 0)
+
+        |> Seq.map (fun (data,count) -> data)
+
+        |> Seq.choose id
+
+let limit_matching_XY_per_letter (word:string) =
 
     seq {
-        for word in source_words do
+                let wordAsArray = word.ToCharArray()
 
-            word_to_print <- word
-            word_count_this_batch <- (word_count_this_batch + 1)
-
-            let wordAsArray = word.ToCharArray()
-            for i = 0 to wordAsArray.Length - 1 do
-                    let found, res1 = letters.TryGetValue word.[i]
-                    match found with
-                    | true -> for xy in res1 do
-                                yield DATA2 { word=word; letter_position=i; candidate_Coordinate=Some xy }
-                    | _    -> yield DATA2 { word=word; letter_position=i; candidate_Coordinate=None }
-            yield MARKER2 { end_of_records_marker_for_a_word=word}
+                for i = 0 to wordAsArray.Length - 1 do
+                        let found, res1 = letters.TryGetValue word.[i]
+                        match found with
+                        | true -> let xx = seq { for xy in res1 do yield DATA2 { word=word; letter_position=i; candidate_Coordinate=Some xy } } |> Seq.truncate xy_selection_limit
+                                  yield! xx
+                        | _    -> yield DATA2 { word=word; letter_position=i; candidate_Coordinate=None }
         }
+
+let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state2> =
+
+        seq {
+              for word in source_words do
+
+                  word_to_print <- word
+                  word_count_this_batch <- (word_count_this_batch + 1)
+
+                  yield! (word |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
+
+                  yield MARKER2 {end_of_records_marker_for_a_word=word} 
+            }
 
 let random = Random()
 
@@ -521,7 +547,7 @@ let debug b =
 let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
   //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
     timer.Dispose() |> ignore
@@ -529,7 +555,7 @@ let main() =
  
 
 main()
-//printBlock()
+printBlock()
 
 //for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 //for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
