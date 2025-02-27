@@ -55,10 +55,15 @@ let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTO
 //let letters0  = dict ['a',[{X=1;Y=2}]]
 //let letters1  = dict ([] :(char * CoordinateList) list)
 
+type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
+
 let letters = Dictionary<char , Coordinate list>()
 
 //		there will be a Coordinate 					Dictionary of Key (x,y)    	and Value ( {letter, Down=Some(Placed\Indirect) or None, Up=Some(Placed\Indirect) or None } )
 let coordinatesDict = Dictionary<Coordinate , Letter_info>()
+
+//      available xy for current word
+let availableXYforWord = Dictionary<int,For_dictionary_update>()
 
 //		there will be a Grid Placed Word			Dictionary of Key (word)   	and Value ({starting position (x,y), direction}).		
 let grid_placed_words = dict ([] : (string * Word_start) list)
@@ -71,7 +76,6 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 
-type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
@@ -103,9 +107,9 @@ type AccStatus =
 | Final
 | Intermediate
 
-type Word_state4  = { status: AccStatus; word:string; for_dictionary_update: For_dictionary_update list }
-type Word_state5  = { word:string; for_dictionary_update: For_dictionary_update list }
-type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update option }
+type Word_state4  = { status: AccStatus; word:string; availableXYcounter:int; for_dictionary_update: For_dictionary_update option }
+type Word_state5  = { word:string; for_dictionary_update: For_dictionary_update option }
+//type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update option }
 
 type failed_list = seq<string>
 
@@ -314,8 +318,27 @@ let return_status_of_candidate_coordinates (coordinates:seq<Word_state2>) : seq<
     ) (DATA3 { word="";letter_position=0; position_on_the_grid=None})
     |> Seq.skip 1 // omit the initial state
 
+let availableXYforWord_action_clear() =
 
-let collect_the_valid_coordinates (coordinates:seq<Word_state3>)  =
+    availableXYforWord.Clear()
+
+let availableXYforWord_action_add counter for_dictionary_update =
+
+    match availableXYforWord.TryAdd(counter,for_dictionary_update) with
+    | false -> failwithf "availableXYforWord_action_add %A %A" counter for_dictionary_update; ()
+    | true  -> ()
+
+let randomXYSelection count = 
+
+    let rndKey = random.Next(1, count + 1)
+
+    let found , res = availableXYforWord.TryGetValue(rndKey)
+
+    match found with
+    | true  -> res
+    | false -> failwithf "randomXYSelection %A" count
+
+let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_state3>)  =
  
   seq { for coordinate in coordinates do
   
@@ -328,32 +351,33 @@ let collect_the_valid_coordinates (coordinates:seq<Word_state3>)  =
 
   |> Seq.scan(fun (state:Word_state4) xy -> match xy with
                                             | DATA3b a   -> match state.status with
-                                                            | Final        -> {Word_state4.status=Intermediate; word=a.word; for_dictionary_update=[a.for_dictionary_update]}
-                                                            | Intermediate -> {state with status=Intermediate; for_dictionary_update=state.for_dictionary_update@[a.for_dictionary_update]}
+                                                            | Final        -> // previous state was FINAL. So all data records have read for the last block.
+                                                                              // this record is DATA. So this is the first record of the next block.
+                                                                              availableXYforWord_action_clear()
+                                                                              availableXYforWord_action_add 1 a.for_dictionary_update
+                                                                              {Word_state4.status=Intermediate; word=a.word; availableXYcounter=1; for_dictionary_update=None}              
+                                                            | Intermediate -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
+                                                                              availableXYforWord_action_add (state.availableXYcounter + 1) a.for_dictionary_update
+                                                                              {state with status=Intermediate; availableXYcounter=state.availableXYcounter + 1; for_dictionary_update=None} 
                                             | MARKER3b b -> match state.status with
-                                                            | Final        -> {state with status=Final ; word=b.end_of_records_marker_for_a_word; for_dictionary_update=[]} // final followed by final means that flag has no preceeding valid coodinates
-                                                            | Intermediate -> {state with status=Final} // the previous record was the last of the valid coordinates
+                                                            | Final        -> // previous state was FINAL this record is MARKER. 
+                                                                              // This means no preceeding DATA records (no valid coodinates) for this current MARKER record.
+                                                                              availableXYforWord_action_clear()
+                                                                              {state with status=Final ; word=b.end_of_records_marker_for_a_word; availableXYcounter=0; for_dictionary_update=None} 
+                                                            | Intermediate -> // previous state was INTERMEDIATE this record is MARKER.
+                                                                              // this means we have read all the DATA records for the current block.
+                                                                              // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
+                                                                              let selectedCoordinateForDictUpdate = randomXYSelection state.availableXYcounter
+                                                                              availableXYforWord_action_clear()
+                                                                              {state with status=Final; for_dictionary_update=Some(selectedCoordinateForDictUpdate)}
 
-    ) ({Word_state4.status=Final; word=""; for_dictionary_update=[]})
+    ) ({Word_state4.status=Final; word=""; availableXYcounter=0; for_dictionary_update=None})
   
   |> Seq.skip 1 // omit the initial state
   |> Seq.filter(fun c -> match c.status with
                          | Final -> true
                          | _ -> false)
   |> Seq.map(fun c -> {Word_state5.word=c.word; for_dictionary_update = c.for_dictionary_update} )
-
-
-let return_one_coordinate_for_one_word (dictionary_data:seq<Word_state5>) =
-
- seq { for c in dictionary_data do
- 
-       match c.for_dictionary_update with
-       | [] -> yield {Word_state6.word =c.word; for_dictionary_update=None }
-       | _  -> let valid_XY_count = c.for_dictionary_update.Length
-               let indx = random.Next(0, valid_XY_count)
-               let selected_a_Coordinate = c.for_dictionary_update.[indx]
-               yield {Word_state6.word =c.word; for_dictionary_update=Some(selected_a_Coordinate) }
-     }
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
@@ -378,7 +402,7 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
     ()
 
-let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state6>) =
+let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state5>) =
     // printfn "Update_dictionaries_output_failed_words"
     seq {
         for c in dictionary_data do
@@ -424,8 +448,7 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
         source_words 
         |> returns_matching_letters_on_the_grid 
         |> return_status_of_candidate_coordinates 
-        |> collect_the_valid_coordinates
-        |> return_one_coordinate_for_one_word
+        |> collect_the_valid_coordinates_and_select_one_of_them
         |> Update_dictionaries_output_failed_words
         |> Seq.toList
 
@@ -498,7 +521,7 @@ let debug b =
 let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
   //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
     timer.Dispose() |> ignore
@@ -506,7 +529,7 @@ let main() =
  
 
 main()
-printBlock()
+//printBlock()
 
 //for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
 //for kvp in coordinatesDict do printfn "Key: %A, Value: %A" kvp.Key kvp.Value
