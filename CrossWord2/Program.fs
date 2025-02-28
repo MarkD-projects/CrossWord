@@ -115,21 +115,23 @@ type failed_list = seq<string>
 
 // DEBUG ============================================
 let consoleLock = obj()
-let mutable word_to_print = ""
-let mutable word_count = 0
-let mutable availableXYcounter = 0
-let mutable word_count_last_batch = 0
-let mutable word_count_this_batch = 0
+let mutable word_count_1 = 0
+let mutable word_to_print_1 = ""
+let mutable word_count_last_batch_1 = 0
+let mutable word_count_this_batch_1 = 0
+
+let mutable word_to_print_2 = ""
+let mutable availableXYcounter_2 = 0
 
 let printText state = 
-    lock consoleLock (fun () -> printfn "%-20s  %-10i  availiable %-10i " word_to_print word_count_this_batch availableXYcounter)
-    word_count_last_batch <- word_count_this_batch
-    word_count_this_batch <- 0
+    lock consoleLock (fun () -> printfn "%-10i] %-20s  %-10i" word_count_1 word_to_print_1 word_count_this_batch_1)
+    word_count_last_batch_1 <- word_count_this_batch_1
+    word_count_this_batch_1 <- 0
 
 let printCount state =
-    lock consoleLock (fun () -> printfn "%A" word_count)
+    lock consoleLock (fun () -> printfn "%A %A " word_to_print_2 availableXYcounter_2)
 
-let timer  = new Timer(printText, null, 0,  5000)
+let timer  = new Timer(printText,  null, 0, 5000)
 let timer2 = new Timer(printCount, null, 0, 5000)
 // ==================================================
 
@@ -366,8 +368,8 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               let selectedCoordinateForDictUpdate = randomXYSelection state.availableXYcounter
                                                                               availableXYforWord_action_clear()
 
-                                                                              word_to_print         <- b.end_of_records_marker_for_a_word
-                                                                              availableXYcounter    <- state.availableXYcounter
+                                                                              word_to_print_2         <- b.end_of_records_marker_for_a_word
+                                                                              availableXYcounter_2    <- state.availableXYcounter
 
                                                                               {state with status=Final; for_dictionary_update=Some(selectedCoordinateForDictUpdate)}
 
@@ -475,7 +477,7 @@ let limit_matching_XY_per_letter (word:string) =
                                   let yy = Seq.cache xx
                                   match Seq.isEmpty yy with
                                   | true  -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
-                                  | false -> yield! xx
+                                  | false -> yield! yy
 
                         | _    -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
         }
@@ -485,9 +487,9 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
         seq {
               for word in source_words do
 
-                  //word_to_print <- word
-                  //word_count_this_batch <- (word_count_this_batch + 1)
-                  word_count <- word_count + 1
+                  word_to_print_1 <- word
+                  word_count_this_batch_1 <- (word_count_this_batch_1 + 1)
+                  word_count_1 <- word_count_1 + 1
 
                   yield! (word |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
 
