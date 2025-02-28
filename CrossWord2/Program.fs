@@ -21,6 +21,8 @@ type CellContent =
 
 type CellStatus = {cellContent:CellContent ; availableDirection:Direction option}
 
+type WordSplit = {offsetOfIntersectingLetter:int; positionOfIntersectingLetter:int; NumberOflettersBeforeTheIntersectionLetter:int; NumberOflettersAfterTheIntersectionLetter:int }
+
 type Placed = { word:string; placed:bool}
 type Coordinate = { X: int; Y: int }
 
@@ -201,13 +203,11 @@ let no_adjacent_word_to_the_added_letter (lineOfTheWordToBeAdded:Direction) (gri
 
     returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate |> Seq.forall( fun xy -> isCellEmpty xy )
 
-let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:int) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
+let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
     // Note using position not offset in the movement calculations
-    let positionOfIntersectingLetter = offsetOfIntersectingLetter + 1
-
-    let NumberOflettersBeforeTheIntersectionLetter = positionOfIntersectingLetter - 1
-    let NumberOflettersAfterTheIntersectionLetter  = word.Length - positionOfIntersectingLetter
+    let NumberOflettersBeforeTheIntersectionLetter = wordsplit.NumberOflettersBeforeTheIntersectionLetter
+    let NumberOflettersAfterTheIntersectionLetter  = wordsplit.NumberOflettersAfterTheIntersectionLetter
 
     let coordinateAdjacentToStartLetter() = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
     let coordinateAdjacentToEndLetter()   = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
@@ -216,7 +216,7 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
     let coordinatesAfterIntersectingToEndLetter() = moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
 
     let coordinatesStartUpToIntersectingLetterAndChar()  = coordinatesStartUpToIntersectingLetter()  |> Seq.mapi (fun i coordinate -> (coordinate , word.[i]) )
-    let coordinatesAfterIntersectingToEndLetterAndChar() = coordinatesAfterIntersectingToEndLetter() |> Seq.mapi (fun i coordinate -> (coordinate , word.[offsetOfIntersectingLetter + 1 + i]) )
+    let coordinatesAfterIntersectingToEndLetterAndChar() = coordinatesAfterIntersectingToEndLetter() |> Seq.mapi (fun i coordinate -> (coordinate , word.[wordsplit.offsetOfIntersectingLetter + 1 + i]) )
 
     let allCoordinates() = Seq.append (coordinatesStartUpToIntersectingLetterAndChar()) (coordinatesAfterIntersectingToEndLetterAndChar())
 
@@ -270,7 +270,7 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
              Some( {word=word;
                     intersection_coordinate=gridCoordinate;
-                    coordinates_of_the_word=Seq.append (allCoordinates()) (seq { yield (gridCoordinate,word.[offsetOfIntersectingLetter]) });
+                    coordinates_of_the_word=Seq.append (allCoordinates()) (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
                     new_word_direction=lineOfTheWordToBeAdded} )    
   
           else
@@ -285,14 +285,16 @@ let checkAvailabilityOfRemainingCells (word:string) (offsetOfIntersectingLetter:
 
        None
 
-let areCellsAvailiable (word:string) (offsetOfIntersectingLetter:int) (gridCoordinate:Coordinate) =
+let areCellsAvailiable (word:string) (wordsplit:WordSplit) (gridCoordinate:Coordinate) =
 
-    // first checks the intersection letter. It's coordinate and it's character should always exist in the dictionary and then checks the remaining letters in the word.
-
-    match (cellStatus gridCoordinate word.[offsetOfIntersectingLetter]) with                                  
-    |{cellContent=MatchingLetter; availableDirection=Some(x)} -> checkAvailabilityOfRemainingCells word offsetOfIntersectingLetter x gridCoordinate
+    // the first check will be the intersection letter taken from the Letters Dictionary.
+    // that letter will be at that XY stored in the Coordinates Dictionary.
+    // The Coordinates Dictionary will indicate if that letter can be used.
+    
+    match (cellStatus gridCoordinate word.[wordsplit.offsetOfIntersectingLetter]) with                                  
+    |{cellContent=MatchingLetter; availableDirection=Some(x)} -> checkAvailabilityOfRemainingCells word wordsplit x gridCoordinate
     |{cellContent=MatchingLetter; availableDirection=None}    -> None
-    |_                                                        -> failwithf "In areCellsAvailiable the call to cellStatus fails with parameters %A %A " gridCoordinate word.[offsetOfIntersectingLetter] ; None
+    |_                                                        -> failwithf "In areCellsAvailiable the call to cellStatus fails with parameters %A %A " gridCoordinate word.[wordsplit.offsetOfIntersectingLetter] ; None
 
 //let return_status_of_candidate_coordinates (coordinates:seq<Word_state3>) : seq<Word_state3>  =
 
@@ -458,11 +460,14 @@ let limit_matching_XY_per_letter (word:string) =
 
     seq {
                 let wordAsArray = word.ToCharArray()
+                let wordLength = word.Length
 
                 for i = 0 to wordAsArray.Length - 1 do
                         let found, res1 = letters.TryGetValue word.[i]
                         match found with
-                        | true -> let xx = seq { for xy in res1 do let here = areCellsAvailiable word i xy
+                        | true -> let letterPOSITION = i + 1
+                                  let wordsplit = {offsetOfIntersectingLetter=i; positionOfIntersectingLetter=letterPOSITION; NumberOflettersBeforeTheIntersectionLetter=letterPOSITION - 1; NumberOflettersAfterTheIntersectionLetter=wordLength - letterPOSITION}
+                                  let xx = seq { for xy in res1 do let here = areCellsAvailiable word wordsplit xy
                                                                    match here with 
                                                                    | Some h -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; for_dictionary_update=h} }
                                                                    | None   -> ()
@@ -567,8 +572,8 @@ let debug b =
 let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    //update_the_dictionaries  (source_words_2.Tail |> List.take 200) 0 |> ignore
-    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
     timer.Dispose()  |> ignore
     timer2.Dispose() |> ignore
