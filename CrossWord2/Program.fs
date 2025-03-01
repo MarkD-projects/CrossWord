@@ -135,7 +135,7 @@ let timer  = new Timer(printText,  null, 0, 5000)
 let timer2 = new Timer(printCount, null, 0, 5000)
 // ==================================================
 
-let xy_selection_limit = 10
+let xy_selection_limit = 1
 
 let random = Random()
 
@@ -208,19 +208,18 @@ let no_adjacent_word_to_the_added_letter (lineOfTheWordToBeAdded:Direction) (gri
 let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate) =
 
     // Note using position not offset in the movement calculations
-    let NumberOflettersBeforeTheIntersectionLetter = wordsplit.NumberOflettersBeforeTheIntersectionLetter
-    let NumberOflettersAfterTheIntersectionLetter  = wordsplit.NumberOflettersAfterTheIntersectionLetter
 
-    let coordinateAdjacentToStartLetter() = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
-    let coordinateAdjacentToEndLetter()   = Seq.head (moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
+    let coordinateAdjacentToStartLetter() = Seq.head (moveToCoordinates gridCoordinate (wordsplit.NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
+    let coordinateAdjacentToEndLetter()   = Seq.head (moveToCoordinates gridCoordinate (wordsplit.NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
 
-    let coordinatesStartUpToIntersectingLetter()  = moveToCoordinates gridCoordinate NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
-    let coordinatesAfterIntersectingToEndLetter() = moveToCoordinates gridCoordinate (NumberOflettersAfterTheIntersectionLetter) lineOfTheWordToBeAdded ToEnd
+    let coordinatesStartUpToIntersectingLetter()  = moveToCoordinates gridCoordinate wordsplit.NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
+    let coordinatesAfterIntersectingToEndLetter() = moveToCoordinates gridCoordinate wordsplit.NumberOflettersAfterTheIntersectionLetter  lineOfTheWordToBeAdded ToEnd
 
     let coordinatesStartUpToIntersectingLetterAndChar()  = coordinatesStartUpToIntersectingLetter()  |> Seq.mapi (fun i coordinate -> (coordinate , word.[i]) )
     let coordinatesAfterIntersectingToEndLetterAndChar() = coordinatesAfterIntersectingToEndLetter() |> Seq.mapi (fun i coordinate -> (coordinate , word.[wordsplit.offsetOfIntersectingLetter + 1 + i]) )
 
     let allCoordinates() = Seq.append (coordinatesStartUpToIntersectingLetterAndChar()) (coordinatesAfterIntersectingToEndLetterAndChar())
+                           |> Seq.cache
 
     let isCellAvailable (xy,c) =
 
@@ -229,7 +228,8 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
         |{cellContent=Empty         } -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
         |_                            -> false
 
-    let allCellsAvailable() = allCoordinates() |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
+    let allCellsAvailable allCoordinates = 
+        allCoordinates |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
 
     // ======================================================================================================================
 
@@ -268,11 +268,13 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
 
        if isCellEmpty (coordinateAdjacentToEndLetter()) then
 
-          if allCellsAvailable() then
+          let allCoordinates = allCoordinates() // cache
+
+          if allCellsAvailable allCoordinates then
 
              Some( {word=word;
                     intersection_coordinate=gridCoordinate;
-                    coordinates_of_the_word=Seq.append (allCoordinates()) (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
+                    coordinates_of_the_word=Seq.append allCoordinates (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
                     new_word_direction=lineOfTheWordToBeAdded} )    
   
           else

@@ -4,6 +4,44 @@ open System
 open System.IO
 open System.Collections.Generic
 open System.Threading
+open System.Diagnostics
+
+let stopwatch = Stopwatch()
+
+type Coordinate = { X: int; Y: int }
+
+let random = Random()
+
+let dictXY  = Dictionary<Coordinate , uint>()
+let dictNum = Dictionary<uint       , uint>()
+
+let test1() =
+ dictXY.Clear()
+ for i in 1 .. 10000 do dictXY.TryAdd( {X=random.Next(0, 5000) ; Y=random.Next(0, 5000)} , random.Next(0, 5000) |> uint) |> ignore
+
+stopwatch.Start()
+test1()
+stopwatch.Stop()
+
+printfn "%A" dictXY.Count
+printfn "%A" stopwatch.Elapsed
+
+
+let test2() =
+ dictNum.Clear()
+ for i in 1 .. 10000 do dictNum.TryAdd( ((random.Next(0, 5000) * 1000000) + random.Next(0, 5000)) |> uint, random.Next(0, 5000) |> uint) |> ignore
+
+stopwatch.Start()
+test2()
+stopwatch.Stop()
+
+printfn "%A" dictNum.Count
+printfn "%A" stopwatch.Elapsed
+
+
+
+
+
 
 
 
