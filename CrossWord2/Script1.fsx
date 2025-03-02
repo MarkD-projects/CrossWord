@@ -41,7 +41,7 @@ printfn "%A" stopwatch.Elapsed
 
 
 
-
+0 % 100
 
 
 
@@ -53,6 +53,20 @@ System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"
 |> Seq.countBy (fun c -> c)
 |> Seq.sortBy(fun (_,i) -> i )
 |> Seq.iter(fun c -> printfn "%A" c)
+
+
+
+
+
+
+//["aaaaa";"bbbb";"ccc"]
+System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
+|> Seq.map (fun w -> w.Length |> float)
+|> Seq.average
+
+
+
+
 
 
 

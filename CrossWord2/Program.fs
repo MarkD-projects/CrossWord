@@ -90,8 +90,8 @@ type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_updat
 //| MARKER2 of Word_state2_marker
 
 
-type Word_state3_data   = { word: string; letter_position: int; position_on_the_grid: Position_on_the_grid option}
-type Word_state3_marker = { end_of_records_marker_for_a_word: string}
+type Word_state3_data   = { word: string; word_count:int; letter_position: int; letter_dict_index:int option; position_on_the_grid: Position_on_the_grid option}
+type Word_state3_marker = { end_of_records_marker_for_a_word: string; word_count:int}
 type Word_state3 =
 | DATA3   of Word_state3_data
 | MARKER3 of Word_state3_marker
@@ -135,7 +135,9 @@ let timer  = new Timer(printText,  null, 0, 5000)
 let timer2 = new Timer(printCount, null, 0, 5000)
 // ==================================================
 
-let xy_selection_limit = 1
+let xy_letter_selection_limit = 5
+let xy_word_selection_limit = xy_letter_selection_limit * 10
+let housekeeping_required = 100
 
 let random = Random()
 
@@ -444,6 +446,8 @@ let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_co
                 let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
                 do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=DOWN}
 
+let letter_dict_housekeeping() = ()
+
 let limit_matching_XY_per_word (data:Word_state3 seq) =
 
         data 
@@ -451,7 +455,7 @@ let limit_matching_XY_per_word (data:Word_state3 seq) =
         |> Seq.scan (fun (data,count) x -> match x with
                                            | DATA3 a -> match a.position_on_the_grid with
                                                         | Some a -> match count with
-                                                                    | count when count < xy_selection_limit -> ( Some x , (count + 1) )
+                                                                    | count when count < xy_word_selection_limit -> ( Some x , (count + 1) )
                                                                     | _                                     -> ( None   , count       ) // no more candidate xy for a word
                                                         | None   -> ( Some x , count)
                                            | _       -> ( None , count ) )   (None , 0)
@@ -460,7 +464,7 @@ let limit_matching_XY_per_word (data:Word_state3 seq) =
 
         |> Seq.choose id
 
-let limit_matching_XY_per_letter (word:string) =
+let limit_matching_XY_per_letter (word_count:int, word:string) =
 
     seq {
                 let wordAsArray = word.ToCharArray()
@@ -471,32 +475,40 @@ let limit_matching_XY_per_letter (word:string) =
                         match found with
                         | true -> let letterPOSITION = i + 1
                                   let wordsplit = {offsetOfIntersectingLetter=i; positionOfIntersectingLetter=letterPOSITION; NumberOflettersBeforeTheIntersectionLetter=letterPOSITION - 1; NumberOflettersAfterTheIntersectionLetter=wordLength - letterPOSITION}
-                                  let xx = seq { for xy in res1 do let here = areCellsAvailiable word wordsplit xy
-                                                                   match here with 
-                                                                   | Some h -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; for_dictionary_update=h} }
-                                                                   | None   -> ()
-                                               } |> Seq.truncate xy_selection_limit
+                                  let ww = res1 |> Seq.mapi(fun i xy -> (i, xy) )
+                                  let xx = seq { for (letter_index,xy) in ww do let here = areCellsAvailiable word wordsplit xy
+                                                                                match here with 
+                                                                                | Some h -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=Some(letter_index); position_on_the_grid=Some {can_add_word_here=xy; for_dictionary_update=h} }
+                                                                                | None   -> ()
+                                               } |> Seq.truncate xy_letter_selection_limit
                                   let yy = Seq.cache xx
                                   match Seq.isEmpty yy with
-                                  | true  -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
+                                  | true  -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=None; position_on_the_grid=None }
                                   | false -> yield! yy
 
-                        | _    -> yield DATA3 { word=word; letter_position=i; position_on_the_grid=None }
+                        | _    -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=None; position_on_the_grid=None }
         }
 
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state3> =
 
+        let words_and_word_counts = source_words |> Seq.mapi(fun i word -> (i,word))
+
         seq {
-              for word in source_words do
+              for (word_count, word) in words_and_word_counts do
 
                   word_to_print_1 <- word
                   word_count_this_batch_1 <- (word_count_this_batch_1 + 1)
                   word_count_1 <- word_count_1 + 1
 
-                  yield! (word |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
+                  //if (word_count % housekeeping_required) = 0 then letter_dict_housekeeping()
 
-                  yield MARKER3 {end_of_records_marker_for_a_word=word} 
-            }
+                  yield! ( (word_count, word) |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
+
+                  yield MARKER3 {end_of_records_marker_for_a_word=word; word_count=word_count} 
+        }
+
+    // >>> WORKING HERE
+
 
 let rec update_the_dictionaries (source_words:string list) (length_of_previous_failed_list:int) =
 
@@ -576,8 +588,8 @@ let debug b =
 let main() =
 
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
-    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
     printfn "========== END =================="
     timer.Dispose()  |> ignore
     timer2.Dispose() |> ignore
