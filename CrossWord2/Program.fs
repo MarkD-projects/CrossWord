@@ -81,7 +81,7 @@ let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
-type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_update: For_dictionary_update} 
+type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_update: For_dictionary_update; letter_dict_index:int} 
 
 //type Word_state2_data   = { word: string; letter_position: int; candidate_Coordinate: Coordinate option; for_dictionary_update: For_dictionary_update option }
 //type Word_state2_marker = { end_of_records_marker_for_a_word: string}
@@ -90,25 +90,31 @@ type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_updat
 //| MARKER2 of Word_state2_marker
 
 
-type Word_state3_data   = { word: string; word_count:int; letter_position: int; letter_dict_index:int option; position_on_the_grid: Position_on_the_grid option}
+type Word_state3_data   = { word: string; word_count:int; letter_position: int; position_on_the_grid: Position_on_the_grid option}
 type Word_state3_marker = { end_of_records_marker_for_a_word: string; word_count:int}
 type Word_state3 =
 | DATA3   of Word_state3_data
 | MARKER3 of Word_state3_marker
 
 
-type Word_state3b_data   = { word: string; letter_position: int; can_add_word_here: Coordinate ; for_dictionary_update: For_dictionary_update}
-type Word_state3b_marker = { end_of_records_marker_for_a_word: string}
+type Word_state3b_data   = { word: string; word_count:int; letter_position: int; letter_dict_index:int; can_add_word_here: Coordinate ; for_dictionary_update: For_dictionary_update}
+type Word_state3b_marker = { end_of_records_marker_for_a_word: string; word_count:int}
 type Word_state3b =
 | DATA3b   of Word_state3b_data
 | MARKER3b of Word_state3b_marker
 
-type AccStatus =
-| Final
-| Intermediate
+//type AccStatus =
+//| Final
+//| Intermediate
 
-type Word_state4  = { status: AccStatus; word:string; availableXYcounter:int; for_dictionary_update: For_dictionary_update option }
-type Word_state5  = { word:string; for_dictionary_update: For_dictionary_update option }
+type Word_state4_Intermediate = { word:string;  word_count:int; total_of_letter_dict_index:int; availableXYcounter:int; letter_dict_index:int }
+type Word_state4_Final        = { word:string;  word_count:int; total_of_letter_dict_index:int; for_dictionary_update: For_dictionary_update option }
+type Word_state4 =
+| Intermediate of Word_state4_Intermediate
+| Final        of Word_state4_Final
+
+
+type Word_state5  = { word:string; word_count:int; for_dictionary_update: For_dictionary_update option }
 //type Word_state6  = { word:string; for_dictionary_update: For_dictionary_update option }
 
 type failed_list = seq<string>
@@ -337,7 +343,7 @@ let randomXYSelection count =
     let found , res = availableXYforWord.TryGetValue(rndKey)
 
     match found with
-    | true  -> res
+    | true  -> (res, rndKey)
     | false -> failwithf "randomXYSelection %A" count
 
 let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_state3>)  =
@@ -346,44 +352,46 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
   
             match coordinate with
             | DATA3 a -> match a.position_on_the_grid with
-                         | Some p -> yield (DATA3b { word=a.word; letter_position=a.letter_position; can_add_word_here=p.can_add_word_here ; for_dictionary_update=p.for_dictionary_update})
+                         | Some p -> yield (DATA3b { word=a.word; word_count=a.word_count; letter_position=a.letter_position; letter_dict_index=p.letter_dict_index; can_add_word_here=p.can_add_word_here ; for_dictionary_update=p.for_dictionary_update})
                          | None   -> yield! Seq.empty
-            | MARKER3 b -> yield MARKER3b { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
+            | MARKER3 b -> yield MARKER3b { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word; word_count=b.word_count}
        }
 
   |> Seq.scan(fun (state:Word_state4) xy -> match xy with
-                                            | DATA3b a   -> match state.status with
-                                                            | Final        -> // previous state was FINAL. So all data records have read for the last block.
+                                            | DATA3b a   -> match state with
+                                                            | Final f      -> // previous state was FINAL. So all data records have read for the last block.
                                                                               // this record is DATA. So this is the first record of the next block.
                                                                               availableXYforWord_action_clear()
                                                                               availableXYforWord_action_add 1 a.for_dictionary_update
-                                                                              {Word_state4.status=Intermediate; word=a.word; availableXYcounter=1; for_dictionary_update=None}              
-                                                            | Intermediate -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
-                                                                              availableXYforWord_action_add (state.availableXYcounter + 1) a.for_dictionary_update
-                                                                              {state with status=Intermediate; availableXYcounter=state.availableXYcounter + 1; for_dictionary_update=None} 
-                                            | MARKER3b b -> match state.status with
-                                                            | Final        -> // previous state was FINAL this record is MARKER. 
+                                                                              Intermediate({word=a.word; word_count=a.word_count; availableXYcounter=1; letter_dict_index=a.letter_dict_index})           
+                                                            | Intermediate i -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
+                                                                              availableXYforWord_action_add (i.availableXYcounter + 1) a.for_dictionary_update
+                                                                              Intermediate({word=a.word; word_count=a.word_count; availableXYcounter=i.availableXYcounter + 1; letter_dict_index=i.letter_dict_index + a.letter_dict_index})
+                                            | MARKER3b b -> match state with
+                                                            | Final f       -> // previous state was FINAL this record is MARKER. 
                                                                               // This means no preceeding DATA records (no valid coodinates) for this current MARKER record.
                                                                               availableXYforWord_action_clear()
-                                                                              {state with status=Final ; word=b.end_of_records_marker_for_a_word; availableXYcounter=0; for_dictionary_update=None} 
-                                                            | Intermediate -> // previous state was INTERMEDIATE this record is MARKER.
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=0; for_dictionary_update=None})
+                                                            | Intermediate i -> // previous state was INTERMEDIATE this record is MARKER.
                                                                               // this means we have read all the DATA records for the current block.
                                                                               // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
-                                                                              let selectedCoordinateForDictUpdate = randomXYSelection state.availableXYcounter
+                                                                              let (selectedCoordinateForDictUpdate, XYoffset) = randomXYSelection i.availableXYcounter
                                                                               availableXYforWord_action_clear()
 
                                                                               word_to_print_2         <- b.end_of_records_marker_for_a_word
-                                                                              availableXYcounter_2    <- state.availableXYcounter
+                                                                              availableXYcounter_2    <- i.availableXYcounter
 
-                                                                              {state with status=Final; for_dictionary_update=Some(selectedCoordinateForDictUpdate)}
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=0; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
 
-    ) ({Word_state4.status=Final; word=""; availableXYcounter=0; for_dictionary_update=None})
+    ) (Final {word=""; word_count=0;total_of_letter_dict_index=0;for_dictionary_update=None})
   
   |> Seq.skip 1 // omit the initial state
-  |> Seq.filter(fun c -> match c.status with
-                         | Final -> true
-                         | _ -> false)
-  |> Seq.map(fun c -> {Word_state5.word=c.word; for_dictionary_update = c.for_dictionary_update} )
+
+  |> fun c -> seq { for r in c do match r with
+                                  | Final f -> yield f
+                                  | _       -> yield! Seq.empty }
+
+  |> Seq.map(fun c -> {Word_state5.word=c.word; word_count=c.word_count; for_dictionary_update = c.for_dictionary_update} )
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
@@ -414,6 +422,7 @@ let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state5>) =
         for c in dictionary_data do
             match c.for_dictionary_update with 
             | Some coordinate_info -> do_dict_updates coordinate_info
+                                      if (c.word_count % housekeeping_required) = 0 then letter_dict_housekeeping c.
                                       yield! Seq.empty
             | _                    -> yield c.word
     }
@@ -478,15 +487,15 @@ let limit_matching_XY_per_letter (word_count:int, word:string) =
                                   let ww = res1 |> Seq.mapi(fun i xy -> (i, xy) )
                                   let xx = seq { for (letter_index,xy) in ww do let here = areCellsAvailiable word wordsplit xy
                                                                                 match here with 
-                                                                                | Some h -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=Some(letter_index); position_on_the_grid=Some {can_add_word_here=xy; for_dictionary_update=h} }
+                                                                                | Some h -> yield DATA3 { word=word; word_count=word_count; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; letter_dict_index=letter_index; for_dictionary_update=h} }
                                                                                 | None   -> ()
                                                } |> Seq.truncate xy_letter_selection_limit
                                   let yy = Seq.cache xx
                                   match Seq.isEmpty yy with
-                                  | true  -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=None; position_on_the_grid=None }
+                                  | true  -> yield DATA3 { word=word; word_count=word_count; letter_position=i; position_on_the_grid=None }
                                   | false -> yield! yy
 
-                        | _    -> yield DATA3 { word=word; word_count=word_count; letter_position=i; letter_dict_index=None; position_on_the_grid=None }
+                        | _    -> yield DATA3 { word=word; word_count=word_count; letter_position=i; position_on_the_grid=None }
         }
 
 let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_state3> =
@@ -499,8 +508,6 @@ let returns_matching_letters_on_the_grid (source_words:list<string>) : seq<Word_
                   word_to_print_1 <- word
                   word_count_this_batch_1 <- (word_count_this_batch_1 + 1)
                   word_count_1 <- word_count_1 + 1
-
-                  //if (word_count % housekeeping_required) = 0 then letter_dict_housekeeping()
 
                   yield! ( (word_count, word) |> limit_matching_XY_per_letter |> limit_matching_XY_per_word)
 
