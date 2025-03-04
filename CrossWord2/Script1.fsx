@@ -176,6 +176,10 @@ seq { for x in 1 .. 10 do yield x }
 |> Seq.iter(fun num -> printfn "%A" num)
 
 
+seq { for x in 1 .. 10 do 
+       if x <> 5 then yield x else yield! Seq.empty      
+}
+|> Seq.iter(fun num -> printfn "%A" num)
 
 
 seq { for x in 1 .. 10 do yield x }
