@@ -107,8 +107,10 @@ type Word_state3b =
 //| Final
 //| Intermediate
 
-type Word_state4_Intermediate = { word:string;  word_count:int; total_of_letter_dict_index:int; availableXYcounter:int; letter_dict_index:int }
-type Word_state4_Final        = { word:string;  word_count:int; total_of_letter_dict_index:int; for_dictionary_update: For_dictionary_update option }
+type Word_state4_Intermediate       = { word:string;  word_count:int; total_of_letter_dict_index:int; availableXYcounter:int; letter_dict_index:int }
+type Word_state4_Final              = { word:string;  word_count:int; total_of_letter_dict_index:int; for_dictionary_update: For_dictionary_update option }
+type Word_state4_Final_housekeeping = { word:string;  word_count:int; total_of_letter_dict_index:int; for_dictionary_update: For_dictionary_update option }
+
 type Word_state4 =
 | Intermediate of Word_state4_Intermediate
 | Final        of Word_state4_Final
@@ -363,15 +365,15 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               // this record is DATA. So this is the first record of the next block.
                                                                               availableXYforWord_action_clear()
                                                                               availableXYforWord_action_add 1 a.for_dictionary_update
-                                                                              Intermediate({word=a.word; word_count=a.word_count; availableXYcounter=1; letter_dict_index=a.letter_dict_index})           
+                                                                              Intermediate({word=a.word; word_count=a.word_count; total_of_letter_dict_index=f.total_of_letter_dict_index; availableXYcounter=1; letter_dict_index=a.letter_dict_index})           
                                                             | Intermediate i -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
                                                                               availableXYforWord_action_add (i.availableXYcounter + 1) a.for_dictionary_update
-                                                                              Intermediate({word=a.word; word_count=a.word_count; availableXYcounter=i.availableXYcounter + 1; letter_dict_index=i.letter_dict_index + a.letter_dict_index})
+                                                                              Intermediate({word=a.word; word_count=a.word_count; total_of_letter_dict_index=i.total_of_letter_dict_index; availableXYcounter=i.availableXYcounter + 1; letter_dict_index=i.letter_dict_index + a.letter_dict_index})
                                             | MARKER3b b -> match state with
                                                             | Final f       -> // previous state was FINAL this record is MARKER. 
                                                                               // This means no preceeding DATA records (no valid coodinates) for this current MARKER record.
                                                                               availableXYforWord_action_clear()
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=0; for_dictionary_update=None})
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=f.total_of_letter_dict_index; for_dictionary_update=None})
                                                             | Intermediate i -> // previous state was INTERMEDIATE this record is MARKER.
                                                                               // this means we have read all the DATA records for the current block.
                                                                               // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
@@ -381,7 +383,15 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               word_to_print_2         <- b.end_of_records_marker_for_a_word
                                                                               availableXYcounter_2    <- i.availableXYcounter
 
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=0; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
+                                                                              let reset_running_total word_count housekeeping_required = if word_count % housekeeping_required = 0 then true else false 
+
+                                                                              let total_up_letter_indexes =
+                                                                                  if reset_running_total b.word_count housekeeping_required then
+                                                                                     XYoffset
+                                                                                  else
+                                                                                     i.total_of_letter_dict_index + XYoffset
+
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; total_of_letter_dict_index=total_up_letter_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
 
     ) (Final {word=""; word_count=0;total_of_letter_dict_index=0;for_dictionary_update=None})
   
