@@ -201,3 +201,27 @@ seq {yield 'a'; yield 'b'; yield 'c'; yield 'd'; yield 'e'; yield 'f'; }
 
 
 //|> List.iter(fun a -> printfn "%A" a)
+
+
+
+
+
+
+
+sprintf "%s" "aaaaaa"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

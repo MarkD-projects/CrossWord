@@ -49,14 +49,6 @@ let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTO
                        |> Array.toList
 
 
-//		there will be a Letters						Dictionary of Key (letter) 	and Value (list (x,y))
-// https://stackoverflow.com/questions/54074653/how-to-declare-an-empty-map-dictionary
-
-// F# Core Dict (read-only)
-//let letters   = dict Seq.empty<char * CoordinateList>
-//let letters0  = dict ['a',[{X=1;Y=2}]]
-//let letters1  = dict ([] :(char * CoordinateList) list)
-
 type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
 
 let letters = Dictionary<char , Coordinate list>()
@@ -80,16 +72,8 @@ let grid_indirect_words = dict ([] : (string * Word_start) list)
 //		there will be a Grid Indirect Invalid Word 	Dictionary of Key (word) 	and Value (list of records of {starting position (x,y), direction}).
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
-//type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
-//type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
 
 type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_update: For_dictionary_update; letter_dict_index:int} 
-
-//type Word_state2_data   = { word: string; letter_position: int; candidate_Coordinate: Coordinate option; for_dictionary_update: For_dictionary_update option }
-//type Word_state2_marker = { end_of_records_marker_for_a_word: string}
-//type Word_state2 =
-//| DATA2   of Word_state2_data
-//| MARKER2 of Word_state2_marker
 
 
 type Word_state3_data   = { word: string; word_count:int; letter_position: int; position_on_the_grid: Position_on_the_grid option}
@@ -112,7 +96,6 @@ type Word_state4 =
 | Intermediate of Word_state4_Intermediate
 | Final        of Word_state4_Final
 
-//type Word_state5  = { word:string; word_count:int; for_dictionary_update: For_dictionary_update option; housekeeping_required:bool }
 
 type failed_list = seq<string>
 
@@ -131,11 +114,17 @@ let printText state =
     word_count_last_batch_1 <- word_count_this_batch_1
     word_count_this_batch_1 <- 0
 
+let printText2 state = 
+    lock consoleLock (fun () -> printfn "%i]  %s" word_count_1 word_to_print_1 )
+
 let printCount state =
     lock consoleLock (fun () -> printfn "%A %A " word_to_print_2 availableXYcounter_2)
 
-let timer  = new Timer(printText,  null, 0, 5000)
-let timer2 = new Timer(printCount, null, 0, 5000)
+//let timer  = new Timer(printText,  null, 0, 10000)
+let timer  = new Timer(printText2, null, 0, 10000)
+//let timer2 = new Timer(printCount, null, 0, 10000)
+
+
 // ==================================================
 
 let xy_letter_selection_limit = 5
@@ -145,20 +134,6 @@ let housekeeping_required = 100
 let random = Random()
 
 let isCellEmpty (coordinate:Coordinate) = not (coordinatesDict.ContainsKey coordinate)
-
-//let isCellAvailiable (coordinate:Coordinate) (c:char) (matchType:MatchType) = 
-
-//     let found, res = coordinatesDict.TryGetValue coordinate
-
-//     match (matchType  , found) with
-//     | Letter          , true  when res.Letter = c  -> true
-//     | Letter          , true  when res.Letter <> c -> false
-//     | Letter          , false                      -> false
-//     | LetterOrEmpty   , true  when res.Letter = c  -> true
-//     | LetterOrEmpty   , true  when res.Letter <> c -> false
-//     | LetterOrEmpty   , false                      -> true
-//     | MatchType.Empty , false                      -> true
-//     | _                                            -> false
 
 let directionForWordToBePlaced (res:Letter_info) =
 
@@ -192,19 +167,6 @@ let returnAdjacentCellsXY (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coo
     | ACROSS -> seq { yield {X=gridCoordinate.X;     Y=gridCoordinate.Y + 1} ; yield {X=gridCoordinate.X     ; Y=gridCoordinate.Y - 1} }
     | DOWN   -> seq { yield {X=gridCoordinate.X - 1; Y=gridCoordinate.Y}     ; yield {X=gridCoordinate.X + 1 ; Y=gridCoordinate.Y}     }
 
-//let coordinate_would_append_to_a_word_at_right_angles (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
-
-//    List [ for xy in (returnAdjacentCellsXY lineOfTheWordToBeAdded gridCoordinate ) do
-       
-//           let found, res = coordinatesDict.TryGetValue xy
-
-//           match found with
-//           | true -> match lineOfTheWordToBeAdded with
-//                     | ACROSS -> if res.Down.IsSome then yield xy
-//                     | DOWN   -> if res.Across.IsSome then yield xy
-//           | false -> yield! List.empty
-
-//         ]
 
 let no_adjacent_word_to_the_added_letter (lineOfTheWordToBeAdded:Direction) (gridCoordinate:Coordinate)  =
 
@@ -235,39 +197,6 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
 
     let allCellsAvailable allCoordinates = 
         allCoordinates |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
-
-    // ======================================================================================================================
-
-    // Do any of the letters to be added append to the beginning or end of an existing word?
-    // 1] read letter list and return just thoses letter that will be added to empty cells
-    // 2] return (x,y) of adjacent, right-angle, populated cells and the letter at that cell has the opposite Direction.
-
-    // example, word D is not in a valid place. As it appends to words A and B. The intersection with C and E are okay.
-
-    // Handled by coordinate_would_append_to_a_word_at_right_angles
-
-    (*
-          D
-        CCCCC       << C is the chosen intersection letter to be used to place the new word
-          D
-    AAAAAADBBBBB    << the criteria above will return A and B
-          D
-       EEEEEEE      << intersection with existing letter E. So that letter is not returned.
-          D
-
-    *)
-
-    // let gridCellCollisions = [for xy in gridCellsToBePopulated do yield! (coordinate_would_append_to_a_word_at_right_angles lineOfTheWordToBeAdded xy)] 
-
-    // ======================================================================================================================
-
-    // gridCellCollisions is to be replaced with a check that there are no adjacent letters along the side of the word.
-    // the coding difference is that those letters can be flagged as ACROSS or DOWN and not just at right-angles.
-    // note, the two coordinates at the start and end of the word that is to be added are checked for being empty elsewhere.
-
-    // ======================================================================================================================
-
- // if isCellAvailiable gridCoordinate word.[offsetOfIntersectingLetter] Letter &&  // not required.
 
     if isCellEmpty (coordinateAdjacentToStartLetter()) then 
 
@@ -305,23 +234,6 @@ let areCellsAvailiable (word:string) (wordsplit:WordSplit) (gridCoordinate:Coord
     |{cellContent=MatchingLetter; availableDirection=None}    -> None
     |_                                                        -> failwithf "In areCellsAvailiable the call to cellStatus fails with parameters %A %A " gridCoordinate word.[wordsplit.offsetOfIntersectingLetter] ; None
 
-//let return_status_of_candidate_coordinates (coordinates:seq<Word_state3>) : seq<Word_state3>  =
-
-//    coordinates
-//    |> Seq.scan (fun state xy -> match xy with
-//                                 | DATA3 a -> match a.candidate_Coordinate with
-//                                              | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
-//                                            //| Some c -> let here = areCellsAvailiable a.word a.letter_position c
-//                                            //            match here with
-//                                            //            | Some h -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=Some{can_add_word_here=c; for_dictionary_update=h} }
-//                                            //            | None   -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=None }
-//                                              | Some c -> DATA3 { word=a.word; letter_position=a.letter_position; position_on_the_grid=Some{can_add_word_here=a.candidate_Coordinate; for_dictionary_update=a.for_dictionary_update} }
-
-
-//                                 | MARKER3 b -> MARKER3 { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word}
-    
-//    ) (DATA3 { word="";letter_position=0; position_on_the_grid=None})
-//    |> Seq.skip 1 // omit the initial state
 
 let availableXYforWord_action_clear() =
 
@@ -425,8 +337,6 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                   | Final f -> yield f
                                   | _       -> yield! Seq.empty }
 
-  //|> Seq.map(fun c -> {Word_state5.word=c.word; word_count=c.word_count; for_dictionary_update = c.for_dictionary_update; housekeeping_required=c.housekeeping_required} )
-
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
     for xy , letter in for_dictionary_update.coordinates_of_the_word do
@@ -451,7 +361,7 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
     ()
 
 let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state4_Final>) =
-    // printfn "Update_dictionaries_output_failed_words"
+
     seq {
         for c in dictionary_data do
             match c.for_dictionary_update with 
@@ -555,13 +465,13 @@ let rec update_the_dictionaries (source_words:string list) (length_of_previous_f
         |> Update_dictionaries_output_failed_words
         |> Seq.toList
 
-    printfn ("failed_list length ========================================= %A") failed_list.Length
+    printfn ("failed_list length %A") failed_list.Length
     printfn ("failed_list %A") failed_list
 
     match failed_list.Length with
     | l when l = length_of_previous_failed_list && l <> 0 -> failed_list // these words cannot be added.
     | l when l = 0 -> []                                                 // all words have been added.
-    | _ -> update_the_dictionaries failed_list failed_list.Length        // retry the failed to add words
+    | _ -> update_the_dictionaries failed_list failed_list.Length        // retry the list of failed-to-be-added-words
 
 
 
@@ -604,15 +514,17 @@ let printBlock() =
     let x_right   = highestX()
     let x_left    = lowestX()
 
-    for y in y_top .. -1 .. y_bottom do
+    seq {
+            for y in y_top .. -1 .. y_bottom do
 
-        let row_data = seq { for x in x_left .. x_right do yield (helperprintout x y) }
+                let row_data = seq { for x in x_left .. x_right do yield (helperprintout x y) }
 
-        let return_a_row = row_data 
-                           |> Seq.map(fun a -> a.ToString() )
-                           |> Seq.reduce (fun a b -> a + b)
+                let return_a_row = row_data 
+                                   |> Seq.map(fun a -> a.ToString() )
+                                   |> Seq.reduce (fun a b -> a + b)
 
-        printfn "%A" return_a_row
+                yield sprintf "%s" return_a_row
+        }
 
 let debug b =
 
@@ -621,18 +533,39 @@ let debug b =
              yield a
        }
 
+let writeGrid_to_file() =
+
+    use writer = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid_txt"))
+
+    printBlock() |> Seq.iter(fun line -> writer.WriteLine(line) )
+
 let main() =
 
+    let stopwatch = Stopwatch()
+    
+    stopwatch.Start()
+    
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    //update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
-    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
-    printfn "========== END =================="
+    update_the_dictionaries  (source_words_2.Tail |> List.take 8000) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+
+    stopwatch.Stop()
+
+    let elapsed = stopwatch.Elapsed
+    let formattedTime = sprintf "%02d:%02d:%02d" elapsed.Hours elapsed.Minutes elapsed.Seconds
+    printfn "Elapsed time: %s" formattedTime
+
     timer.Dispose()  |> ignore
-    timer2.Dispose() |> ignore
+    //timer2.Dispose() |> ignore
+  
   //Console.ReadLine() |> ignore
  
 
+
+
 main()
+writeGrid_to_file()
+
 //printBlock()
 
 //for kvp in letters         do printfn "Key: %A, Value: %A" kvp.Key kvp.Value.Length
