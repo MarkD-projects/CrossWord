@@ -68,28 +68,17 @@ let coordinatesDict = Dictionary<Coordinate , Letter_info>()
 let availableXYforWord = Dictionary<int,For_dictionary_update>()
 
 // stats on letter dictionary lookups
-type letter_dict_stats = {running_total_of_letter_dict_indexes:int;count_of_letter_dict_indexes:int}
-let stats_on_letter_dictionary_lookupsDictionary = Dictionary<char,letter_dict_stats>()
-
-
-
-
-
-
-
-
-
+type stats_on_letter_dictionary = {running_total_of_letter_dict_indexes:int; count_of_letter_dict_indexes:int}
+let stats_on_letter_dictionary  = Dictionary<char,stats_on_letter_dictionary>()
 
 //		there will be a Grid Placed Word			Dictionary of Key (word)   	and Value ({starting position (x,y), direction}).		
 let grid_placed_words = dict ([] : (string * Word_start) list)
-
 
 //		there will be a Grid Indirect Word 			Dictionary of Key (word) 	and Value (list of records of {starting position (x,y), direction}).
 let grid_indirect_words = dict ([] : (string * Word_start) list)
 
 //		there will be a Grid Indirect Invalid Word 	Dictionary of Key (word) 	and Value (list of records of {starting position (x,y), direction}).
 let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
-
 
 //type State = { this_coordinate: Coordinate_status; overall_status: Overall_coordinates_status ; for_dictionary_update: For_dictionary_update option }
 //type State = { this_coordinate: Coordinate_status; for_dictionary_update: For_dictionary_update option }
@@ -117,7 +106,7 @@ type Word_state3b =
 | MARKER3b of Word_state3b_marker
 
 type Word_state4_Intermediate = { word:string;  word_count:int; running_total_of_letter_dict_indexes:int; count_of_letter_dict_indexes:int; availableXYcounter:int }
-type Word_state4_Final        = { word:string;  word_count:int; running_total_of_letter_dict_indexes:int; count_of_letter_dict_indexes:int; for_dictionary_update: For_dictionary_update option; housekeeping_required:bool}
+type Word_state4_Final        = { word:string;  word_count:int; running_total_of_letter_dict_indexes:int; count_of_letter_dict_indexes:int; for_dictionary_update: For_dictionary_update option}
 
 type Word_state4 =
 | Intermediate of Word_state4_Intermediate
@@ -344,6 +333,20 @@ let availableXYforWord_action_add counter for_dictionary_update =
     | false -> failwithf "availableXYforWord_action_add %A %A" counter for_dictionary_update; ()
     | true  -> ()
 
+let stats_on_letters_action_clear() =
+
+    stats_on_letter_dictionary.Clear()
+
+let stats_on_letter_dictionary_action_update (letter:char) letter_list_index : unit =
+
+    let found, res = stats_on_letter_dictionary.TryGetValue letter
+
+    match found with
+    | true  -> stats_on_letter_dictionary.Item(letter) <- {stats_on_letter_dictionary.running_total_of_letter_dict_indexes=res.running_total_of_letter_dict_indexes + letter_list_index; count_of_letter_dict_indexes = res.count_of_letter_dict_indexes + 1}
+    | false -> match (stats_on_letter_dictionary.TryAdd(letter,{stats_on_letter_dictionary.running_total_of_letter_dict_indexes=letter_list_index; count_of_letter_dict_indexes = 1})) with
+               | true -> ()
+               | false -> failwithf "stats_on_letter_dictionary_action_add_one. Failed to add %A %A" letter letter_list_index
+  
 let randomXYSelection count = 
 
     let rndKey = random.Next(1, count + 1)
@@ -354,8 +357,22 @@ let randomXYSelection count =
     | true  -> (res, rndKey)
     | false -> failwithf "randomXYSelection %A" count
 
+let letter_dict_housekeeping running_total_of_letter_dict_indexes count_of_letter_dict_indexes = 
+
+    for kvp in stats_on_letter_dictionary do
+        
+        if count_of_letter_dict_indexes <> 0 then
+           let splitPoint = running_total_of_letter_dict_indexes / count_of_letter_dict_indexes
+           if splitPoint <> 0 then 
+              let (_, newItem) = List.splitAt splitPoint (letters.Item(kvp.Key))
+              letters.Item(kvp.Key) <- newItem
+
+    ()
+
 let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_state3>)  =
  
+  stats_on_letters_action_clear()
+
   seq { for coordinate in coordinates do
   
             match coordinate with
@@ -371,15 +388,17 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               // this record is DATA. So this is the first record of the next block.
                                                                               availableXYforWord_action_clear()
                                                                               availableXYforWord_action_add 1 a.for_dictionary_update
+                                                                              stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
                                                                               Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=1; availableXYcounter=1})           
                                                             | Intermediate i -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
                                                                               availableXYforWord_action_add (i.availableXYcounter + 1) a.for_dictionary_update
-                                                                              Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes + 1; availableXYcounter=i.availableXYcounter + 1})
+                                                                              stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
+                                                                              Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes + a.letter_dict_index; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes + 1; availableXYcounter=i.availableXYcounter + 1})
                                             | MARKER3b b -> match state with
                                                             | Final f       -> // previous state was FINAL this record is MARKER. 
                                                                               // This means no preceeding DATA records (no valid coodinates) for this current MARKER record.
                                                                               availableXYforWord_action_clear()
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=f.count_of_letter_dict_indexes; for_dictionary_update=None; housekeeping_required=false})
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=f.count_of_letter_dict_indexes; for_dictionary_update=None})
                                                             | Intermediate i -> // previous state was INTERMEDIATE this record is MARKER.
                                                                               // this means we have read all the DATA records for the current block.
                                                                               // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
@@ -389,11 +408,13 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               word_to_print_2         <- b.end_of_records_marker_for_a_word
                                                                               availableXYcounter_2    <- i.availableXYcounter
 
-                                                                              let reset_running_total word_count housekeeping_required = if word_count % housekeeping_required = 0 then true else false 
+                                                                              if (b.word_count % housekeeping_required = 0) then 
+                                                                                  letter_dict_housekeeping i.running_total_of_letter_dict_indexes i.count_of_letter_dict_indexes
+                                                                                  stats_on_letters_action_clear()
+                                                                               
+                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
 
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate); housekeeping_required=reset_running_total b.word_count housekeeping_required})
-
-    ) (Final {word=""; word_count=0;running_total_of_letter_dict_indexes=0; count_of_letter_dict_indexes=0;for_dictionary_update=None;housekeeping_required=false})
+    ) (Final {word=""; word_count=0;running_total_of_letter_dict_indexes=0; count_of_letter_dict_indexes=0;for_dictionary_update=None})
   
   |> Seq.skip 1 // omit the initial state
 
@@ -426,20 +447,12 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
     ()
 
-let letter_dict_housekeeping running_total_of_letter_dict_indexes count_of_letter_dict_indexes = 
-
-    let found, res = coordinatesDict.TryGetValue xy
-
-
-    ()
-
 let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state4_Final>) =
     // printfn "Update_dictionaries_output_failed_words"
     seq {
         for c in dictionary_data do
             match c.for_dictionary_update with 
             | Some coordinate_info -> do_dict_updates coordinate_info
-                                      if c.housekeeping_required then letter_dict_housekeeping c.running_total_of_letter_dict_indexes c.count_of_letter_dict_indexes
                                       yield! Seq.empty
             | _                    -> yield c.word
     }
@@ -499,11 +512,12 @@ let limit_matching_XY_per_letter (word_count:int, word:string) =
                         match found with
                         | true -> let letterPOSITION = i + 1
                                   let wordsplit = {offsetOfIntersectingLetter=i; positionOfIntersectingLetter=letterPOSITION; NumberOflettersBeforeTheIntersectionLetter=letterPOSITION - 1; NumberOflettersAfterTheIntersectionLetter=wordLength - letterPOSITION}
-                                  let ww = res1 |> Seq.mapi(fun i xy -> (i, xy) )
-                                  let xx = seq { for (letter_index,xy) in ww do let here = areCellsAvailiable word wordsplit xy
-                                                                                match here with 
-                                                                                | Some h -> yield DATA3 { word=word; word_count=word_count; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; letter_dict_index=letter_index; for_dictionary_update=h} }
-                                                                                | None   -> ()
+                                  let candidate_coordinate_and_letter_dict_index = res1 |> Seq.mapi(fun i xy -> (i, xy) )
+                                  let xx = seq { for (letter_dict_index,xy) in candidate_coordinate_and_letter_dict_index do 
+                                                     let here = areCellsAvailiable word wordsplit xy
+                                                     match here with 
+                                                     | Some h -> yield DATA3 { word=word; word_count=word_count; letter_position=i; position_on_the_grid=Some {can_add_word_here=xy; letter_dict_index=letter_dict_index; for_dictionary_update=h} }
+                                                     | None   -> ()
                                                } |> Seq.truncate xy_letter_selection_limit
                                   let yy = Seq.cache xx
                                   match Seq.isEmpty yy with
