@@ -64,14 +64,13 @@ type stats_on_letter_dictionary = {running_total_of_letter_dict_indexes:int; cou
 let stats_on_letter_dictionary  = Dictionary<char,stats_on_letter_dictionary>()
 
 //		there will be a Grid Placed Word			Dictionary of Key (word)   	and Value ({starting position (x,y), direction}).		
-let grid_placed_words = dict ([] : (string * Word_start) list)
+//let grid_placed_words = dict ([] : (string * Word_start) list)
 
 //		there will be a Grid Indirect Word 			Dictionary of Key (word) 	and Value (list of records of {starting position (x,y), direction}).
-let grid_indirect_words = dict ([] : (string * Word_start) list)
+//let grid_indirect_words = dict ([] : (string * Word_start) list)
 
 //		there will be a Grid Indirect Invalid Word 	Dictionary of Key (word) 	and Value (list of records of {starting position (x,y), direction}).
-let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
-
+//let grid_indirect_invalid_words = dict ([] : (string * Word_start) list)
 
 type Position_on_the_grid = {can_add_word_here: Coordinate; for_dictionary_update: For_dictionary_update; letter_dict_index:int} 
 

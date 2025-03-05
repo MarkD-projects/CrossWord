@@ -202,13 +202,53 @@ seq {yield 'a'; yield 'b'; yield 'c'; yield 'd'; yield 'e'; yield 'f'; }
 
 //|> List.iter(fun a -> printfn "%A" a)
 
-
-
-
-
-
-
 sprintf "%s" "aaaaaa"
+
+
+let letter_limit = 3
+let word_limit = 5
+
+let testdata = ["11911911";"222999992222";"999993333333";"44444449999"]
+
+let words (word:string seq) = word |> Seq.mapi (fun count word -> (count,word) )
+
+let chars_in_words (x:(int*string) seq) = seq { for (count,word) in x do   yield seq { for letter in word.ToCharArray() do yield (count,word,letter) } }
+
+let replace_Word_Chars_with_Word_Data word_chars =
+
+                 seq {  for (count,word,c) in word_chars do
+                            if (int c - int '0') <= letter_limit then 
+                                yield! seq {for _ = 1 to (int c - int '0') do yield (count,word,'X')} 
+                            else
+                                yield! seq {for _ = 1 to letter_limit do yield (count,word,'L')} } 
+
+let limited_data_for_chars_in_items (a:seq<seq<int*string*char>>) = seq { for word_level in a do  yield replace_Word_Chars_with_Word_Data word_level }
+                                                                                              
+let limited_data_for_the_word (a:(int*string*char) seq seq) = seq {for word in a do yield! (word |> Seq.truncate word_limit) }
+
+
+testdata
+|> words
+|> chars_in_words
+|> limited_data_for_chars_in_items
+|> limited_data_for_the_word  
+|> Seq.iter(fun out -> printfn "%A" out)
+
+
+// better to expand out with additional fields in the records or additional record types.
+
+
+
+
+
+
+
+
+       
+
+
+
+
 
 
 
