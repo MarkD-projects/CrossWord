@@ -357,17 +357,20 @@ let randomXYSelection count =
     | true  -> (res, rndKey)
     | false -> failwithf "randomXYSelection %A" count
 
-let letter_dict_housekeeping running_total_of_letter_dict_indexes count_of_letter_dict_indexes = 
+let letter_dict_housekeeping() =
 
     for kvp in stats_on_letter_dictionary do
         
-        if count_of_letter_dict_indexes <> 0 then
-           let splitPoint = running_total_of_letter_dict_indexes / count_of_letter_dict_indexes
-           if splitPoint <> 0 then 
-              let (_, newItem) = List.splitAt splitPoint (letters.Item(kvp.Key))
-              letters.Item(kvp.Key) <- newItem
-
-    ()
+        if kvp.Value.count_of_letter_dict_indexes <> 0 then
+           let splitPoint = kvp.Value.running_total_of_letter_dict_indexes / kvp.Value.count_of_letter_dict_indexes
+           if splitPoint <> 0 then
+              let found , lettersItem = letters.TryGetValue(kvp.Key)
+              match found with
+              | true -> if not lettersItem.IsEmpty then
+                           let (_, newItem) = List.splitAt splitPoint lettersItem
+                           if not newItem.IsEmpty then
+                              letters.Item(kvp.Key) <- newItem
+              | false -> failwithf "letter_dict_housekeeping %A %A" kvp.Key kvp.Value
 
 let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_state3>)  =
  
@@ -409,7 +412,7 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
                                                                               availableXYcounter_2    <- i.availableXYcounter
 
                                                                               if (b.word_count % housekeeping_required = 0) then 
-                                                                                  letter_dict_housekeeping i.running_total_of_letter_dict_indexes i.count_of_letter_dict_indexes
+                                                                                  letter_dict_housekeeping()
                                                                                   stats_on_letters_action_clear()
                                                                                
                                                                               Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
