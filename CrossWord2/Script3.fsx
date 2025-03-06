@@ -50,15 +50,15 @@ let availableXY (word_info:{|word:string;wordAsArray:char array;wordLength:int;r
 let forEachLetterReturnCandidateXY (word_info:{|word:string;wordAsArray:char array;wordLength:int;res:Coordinate list;letterPosition:int;word_count:int|} )=
      
     let letterPOSITION = word_info.letterPosition + 1
-    let wordsplit = {offsetOfIntersectingLetter=word_info.letterPosition; positionOfIntersectingLetter=letterPOSITION; NumberOflettersBeforeTheIntersectionLetter=letterPOSITION - 1; NumberOflettersAfterTheIntersectionLetter=word_info.wordLength - letterPOSITION}
+    let wordsplit      = {offsetOfIntersectingLetter=word_info.letterPosition; positionOfIntersectingLetter=letterPOSITION; NumberOflettersBeforeTheIntersectionLetter=letterPOSITION - 1; NumberOflettersAfterTheIntersectionLetter=word_info.wordLength - letterPOSITION}
 
-    let candidate_results =
+    let limited_candidate_results =
 
         word_info.res
         |> addIndexToWord
         |> availableXY word_info wordsplit
-                        
-    let limited_candidate_results = candidate_results |> Seq.truncate xy_letter_selection_limit |> Seq.cache
+        |> Seq.truncate xy_letter_selection_limit
+        |> Seq.cache
 
     match Seq.isEmpty limited_candidate_results with
     | true  -> seq { DATA3 { word=word_info.word; word_count=word_info.word_count; letter_position=word_info.letterPosition; position_on_the_grid=None } }

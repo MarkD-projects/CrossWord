@@ -9,18 +9,6 @@ open System.Diagnostics
 
 // https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 
-
-// =============================
-
-type Debug =
-| Yes
-| No
-
-let DEBUG_FLAG = Yes
-
-// =============================
-
-
 type Direction = ACROSS | DOWN
 
 type MatchType =
@@ -58,10 +46,18 @@ let source = Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt")
 
 let source_words   = [ "hello"; "world"; "goodbye"; "cruel"; "place" ]
 
+
+#if DEBUG
 let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
-                       |> Seq.filter (fun w -> w.Length > 1)
-                       |> Seq.randomShuffle
-                       |> Seq.toList
+                           |> Seq.filter (fun w -> w.Length > 1)
+                           |> Seq.toList
+#else
+let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
+                           |> Seq.filter (fun w -> w.Length > 1)
+                           |> Seq.randomShuffle
+                           |> Seq.toList
+#endif
+
 
 type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
 
@@ -279,7 +275,11 @@ let randomXYSelection count =
     let found , res = availableXYforWord.TryGetValue(rndKey)
 
     match found with
+#if DEBUG
+    | true  -> (res, 1)
+#else
     | true  -> (res, rndKey)
+#endif
     | false -> failwithf "randomXYSelection %A" count
 
 let letter_dict_housekeeping() =
@@ -550,7 +550,11 @@ let debug b =
 
 let writeGrid_to_file() =
 
+#if DEBUG
+    use writer = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid_BASELINE.txt"))
+#else
     use writer = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid_txt"))
+#endif
 
     printBlock() |> Seq.iter(fun line -> writer.WriteLine(line) )
 
@@ -561,8 +565,11 @@ let main() =
     stopwatch.Start()
     
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    //update_the_dictionaries  (source_words_2.Tail |> List.take 8000) 0 |> ignore
+#if DEBUG
+    update_the_dictionaries  (source_words_2.Tail |> List.take 4000) 0 |> ignore
+#else
     update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+#endif
 
     stopwatch.Stop()
 

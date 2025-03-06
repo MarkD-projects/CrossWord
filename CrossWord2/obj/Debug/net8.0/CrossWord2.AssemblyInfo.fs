@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("CrossWord2")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b4b4ae41bb7920ec2b418379abca8864941a47cf")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+662ff1dd15e172c158c3668f1d0d22f79a8c4ad0")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("CrossWord2")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("CrossWord2")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]
