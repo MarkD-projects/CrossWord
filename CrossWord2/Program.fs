@@ -1,4 +1,6 @@
 ﻿
+module Program
+
 open System
 open System.IO
 open System.Collections.Generic
@@ -6,6 +8,18 @@ open System.Threading
 open System.Diagnostics
 
 // https://github.com/dwyl/english-words/blob/master/words_alpha.txt
+
+
+// =============================
+
+type Debug =
+| Yes
+| No
+
+let DEBUG_FLAG = Yes
+
+// =============================
+
 
 type Direction = ACROSS | DOWN
 
@@ -45,9 +59,9 @@ let source = Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt")
 let source_words   = [ "hello"; "world"; "goodbye"; "cruel"; "place" ]
 
 let source_words_2 =   System.IO.File.ReadAllLines(Path.Combine(__SOURCE_DIRECTORY__, "words_alpha.txt"))
-                       |> Array.filter (fun w -> w.Length > 1)
-                       |> Array.toList
-
+                       |> Seq.filter (fun w -> w.Length > 1)
+                       |> Seq.randomShuffle
+                       |> Seq.toList
 
 type For_dictionary_update = {word:string; intersection_coordinate:Coordinate ; coordinates_of_the_word:(Coordinate*char) seq ; new_word_direction:Direction}
 
@@ -413,6 +427,8 @@ let limit_matching_XY_per_word (data:Word_state3 seq) =
 
         |> Seq.choose id
 
+
+
 let limit_matching_XY_per_letter (word_count:int, word:string) =
 
     seq {
@@ -545,8 +561,8 @@ let main() =
     stopwatch.Start()
     
     TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
-    update_the_dictionaries  (source_words_2.Tail |> List.take 8000) 0 |> ignore
-    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail |> List.take 8000) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
 
     stopwatch.Stop()
 
