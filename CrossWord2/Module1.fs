@@ -1,16 +1,7 @@
-﻿
+﻿module Module1
 
-open System
-open System.IO
-open System.Collections.Generic
-open System.Threading
-open System.Diagnostics
-
-
-#load "Program.fs"
-open Program
-
-
+open Module_Common
+open Module2
 
 let wordAsArray (word:string, word_count:int) =
 
@@ -42,7 +33,7 @@ let availableXY (word_info:{|word:string;wordAsArray:char array;wordLength:int;r
         seq { for (letter_dict_index,xy) in candiate_coordinates do 
                                 let here = areCellsAvailiable word_info.word wordsplit xy
                                 match here with 
-                                | Some h -> yield DATA3 { word=word_info.word; word_count=word_info.word_count; letter_position=word_info.letterPosition; position_on_the_grid=Some {can_add_word_here=xy; letter_dict_index=letter_dict_index; for_dictionary_update=h} }
+                                | Some h -> yield { Word_state3_data.word=word_info.word; word_count=word_info.word_count; letter_position=word_info.letterPosition; position_on_the_grid=Some {can_add_word_here=xy; letter_dict_index=letter_dict_index; for_dictionary_update=h} }
                                 | None   -> ()
             }
 
@@ -61,7 +52,7 @@ let forEachLetterReturnValidXY (word_info:{|word:string;wordAsArray:char array;w
         |> Seq.cache
 
     match Seq.isEmpty limited_candidate_results with
-    | true  -> seq { DATA3 { word=word_info.word; word_count=word_info.word_count; letter_position=word_info.letterPosition; position_on_the_grid=None } }
+    | true  -> seq { { Word_state3_data.word=word_info.word; word_count=word_info.word_count; letter_position=word_info.letterPosition; position_on_the_grid=None } }
     | false -> limited_candidate_results
 
 
@@ -71,27 +62,8 @@ let forEachLetterReadThroughCandidateXY (word_info:{|word:string;wordAsArray:cha
 
               match data.res with
               | Some xy -> yield! forEachLetterReturnValidXY {|word=data.word;wordAsArray=data.wordAsArray;wordLength=data.wordLength;res=xy;letterPosition=data.letterPosition;word_count=data.word_count|}
-              | None    -> yield (DATA3 { word=data.word; word_count=data.word_count; letter_position=data.letterPosition; position_on_the_grid=None })
+              | None    -> yield ({ Word_state3_data.word=data.word; word_count=data.word_count; letter_position=data.letterPosition; position_on_the_grid=None })
        }
-
-let limited_matching_XY_per_letter (word_count:int, word:string) =
-
-    seq { let availableXY =   
-
-            (word,word_count)
-             |> wordAsArray
-             |> readThroughLetters
-             |> forEachLetterReadThroughCandidateXY
-
-          yield availableXY
-
-        }
-
-
-
-
-
-
 
 
 
