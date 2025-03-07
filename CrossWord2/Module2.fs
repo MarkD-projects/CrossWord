@@ -73,7 +73,7 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
 
        if isCellEmpty (coordinateAdjacentToEndLetter()) then
 
-          let allCoordinates = allCoordinates() // cache
+          let allCoordinates = allCoordinates() // cached
 
           if allCellsAvailable allCoordinates then
 

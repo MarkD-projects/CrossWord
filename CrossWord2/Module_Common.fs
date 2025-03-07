@@ -83,6 +83,13 @@ type Word_state4 =
 | Intermediate of Word_state4_Intermediate
 | Final        of Word_state4_Final
 
+let (|NEW_WORD_BLOCK|IN_WORD_BLOCK|MARKER_AFTER_EMPTY_WORD_BLOCK|MARKER_AFTER_WORD_BLOCK|)( xy:Word_state3b, state:Word_state4) =
+ 
+    match xy,state with
+    | DATA3b a   , Final f        -> NEW_WORD_BLOCK (a , f)
+    | DATA3b a   , Intermediate i -> IN_WORD_BLOCK (a , i)
+    | MARKER3b a , Final f        -> MARKER_AFTER_EMPTY_WORD_BLOCK (a , f)
+    | MARKER3b a , Intermediate i -> MARKER_AFTER_WORD_BLOCK (a , i)
 
 type failed_list = seq<string>
 

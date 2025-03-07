@@ -124,37 +124,36 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
             | MARKER3 b -> yield MARKER3b { end_of_records_marker_for_a_word=b.end_of_records_marker_for_a_word; word_count=b.word_count}
        }
 
-  |> Seq.scan(fun (state:Word_state4) xy -> match xy with
-                                            | DATA3b a   -> match state with
-                                                            | Final f      -> // previous state was FINAL. So all data records have read for the last block.
-                                                                              // this record is DATA. So this is the first record of the next block.
-                                                                              availableXYforWord_action_clear()
-                                                                              availableXYforWord_action_add 1 a.for_dictionary_update
-                                                                              stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
-                                                                              Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=1; availableXYcounter=1})           
-                                                            | Intermediate i -> // previous state was Intermediate this record is also DATA. So this is another record in the current block
-                                                                              availableXYforWord_action_add (i.availableXYcounter + 1) a.for_dictionary_update
-                                                                              stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
-                                                                              Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes + a.letter_dict_index; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes + 1; availableXYcounter=i.availableXYcounter + 1})
-                                            | MARKER3b b -> match state with
-                                                            | Final f       -> // previous state was FINAL this record is MARKER. 
-                                                                              // This means no preceeding DATA records (no valid coodinates) for this current MARKER record.
-                                                                              availableXYforWord_action_clear()
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=f.count_of_letter_dict_indexes; for_dictionary_update=None})
-                                                            | Intermediate i -> // previous state was INTERMEDIATE this record is MARKER.
-                                                                              // this means we have read all the DATA records for the current block.
-                                                                              // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
-                                                                              let (selectedCoordinateForDictUpdate, XYoffset) = randomXYSelection i.availableXYcounter
-                                                                              availableXYforWord_action_clear()
+  |> Seq.scan(fun (state:Word_state4) xy -> match (xy,state) with
 
-                                                                              word_to_print_2         <- b.end_of_records_marker_for_a_word
-                                                                              availableXYcounter_2    <- i.availableXYcounter
+                                            | NEW_WORD_BLOCK (a, f) ->                // previous state was FINAL. So all data records have read for the last block.
+                                                                                      // this record is DATA. So this is the first record of the next block.
+                                                                                      availableXYforWord_action_clear()
+                                                                                      availableXYforWord_action_add 1 a.for_dictionary_update
+                                                                                      stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
+                                                                                      Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=1; availableXYcounter=1})           
+                                            | IN_WORD_BLOCK (a, i) ->                 // previous state was Intermediate this record is also DATA. So this is another record in the current block
+                                                                                      availableXYforWord_action_add (i.availableXYcounter + 1) a.for_dictionary_update
+                                                                                      stats_on_letter_dictionary_action_update (a.word[a.letter_position]) a.letter_dict_index
+                                                                                      Intermediate({word=a.word; word_count=a.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes + a.letter_dict_index; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes + 1; availableXYcounter=i.availableXYcounter + 1})
+                                            | MARKER_AFTER_EMPTY_WORD_BLOCK (b, f) -> // previous state was FINAL (only set for MARKER records) this record is MARKER. 
+                                                                                      // This means no preceeding DATA records (no valid coodinates for the word) for this current MARKER record.
+                                                                                      availableXYforWord_action_clear()
+                                                                                      Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=f.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=f.count_of_letter_dict_indexes; for_dictionary_update=None})
+                                            | MARKER_AFTER_WORD_BLOCK (b, i) ->       // previous state was INTERMEDIATE this record is MARKER.
+                                                                                      // this means we have read all the DATA records for the current block.
+                                                                                      // randomly select from the Dictionary one of the valid XY coordinates. To be used for placing the word on the grid.
+                                                                                      let (selectedCoordinateForDictUpdate, XYoffset) = randomXYSelection i.availableXYcounter
+                                                                                      availableXYforWord_action_clear()
 
-                                                                              if (b.word_count % housekeeping_required = 0) then 
-                                                                                  letter_dict_housekeeping()
-                                                                                  stats_on_letters_action_clear()
+                                                                                      word_to_print_2         <- b.end_of_records_marker_for_a_word
+                                                                                      availableXYcounter_2    <- i.availableXYcounter
+
+                                                                                      if (b.word_count % housekeeping_required = 0) then 
+                                                                                          letter_dict_housekeeping()
+                                                                                          stats_on_letters_action_clear()
                                                                                
-                                                                              Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
+                                                                                      Final({word=b.end_of_records_marker_for_a_word; word_count=b.word_count; running_total_of_letter_dict_indexes=i.running_total_of_letter_dict_indexes; count_of_letter_dict_indexes=i.count_of_letter_dict_indexes; for_dictionary_update=Some(selectedCoordinateForDictUpdate)})
 
     ) (Final {word=""; word_count=0;running_total_of_letter_dict_indexes=0; count_of_letter_dict_indexes=0;for_dictionary_update=None})
   
@@ -197,19 +196,7 @@ let Update_dictionaries_output_failed_words (dictionary_data:seq<Word_state4_Fin
             | _                    -> yield c.word
     }
 
-let seed_the_first_word (word:string) :unit =
-    
-    letters.Clear()
-    coordinatesDict.Clear()
-
-    let starting_coordinate = {X=0;Y=0}   
-    let coordinate_list_for_the_word        = seq { yield starting_coordinate ; yield! (moveToCoordinates starting_coordinate (word.Length - 1) ACROSS ToEnd) }
-    let coordinate_list_for_the_wordAndChar = coordinate_list_for_the_word |> Seq.mapi (fun i coor -> (coor, word.[i]))
-
-    do_dict_updates {word=""; intersection_coordinate=starting_coordinate; coordinates_of_the_word=coordinate_list_for_the_wordAndChar ; new_word_direction=ACROSS}
-
-
-let TESTING_seed_the_first_word (word:string) (direction:Direction) (starting_coordinate:Coordinate) (clear:string option) :unit =
+let seed_the_first_word (word:string) (direction:Direction) (starting_coordinate:Coordinate) (clear:string option) :unit =
   
     if clear = Some "clear" then
         letters.Clear()
@@ -298,7 +285,7 @@ let main() =
     
     stopwatch.Start()
     
-    TESTING_seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
+    seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
 #if DEBUG
     update_the_dictionaries  (source_words_2.Tail |> List.take 2000) 0 |> ignore
 #else
