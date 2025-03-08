@@ -6,9 +6,126 @@ open System.Collections.Generic
 open System.Threading
 open System.Diagnostics
 
-
+#load "Module_Common.fs"
+#load "Helper.fs"
+#load "Module2.fs"
+#load "Module1.fs"
 #load "Program.fs"
 open Program
+
+
+match (5=5) with | true -> Some true | _ -> None
+
+type LoggingBuilder() =
+    let log p = printfn "expression is %A" p
+
+    member this.Bind(x, f) =
+        log x
+        f x
+
+    member this.Return(x) =
+        x
+
+let logger = new LoggingBuilder()
+
+let loggedWorkflow =
+    logger
+        {
+        let! x = 42
+        let! y = 43
+        let! z = x + y
+        return z
+        }
+
+
+type MaybeBuilder() =
+
+    member this.Bind(x, f) =
+        match x with
+        | None -> None
+        | Some a -> f a
+
+    member this.Return(x) =
+        Some x
+
+let maybe = new MaybeBuilder()
+
+let divideBy bottom top =
+    if bottom = 0
+    then None
+    else Some(top/bottom)
+
+
+let divideByWorkflow init x y z =
+    maybe
+        {
+        let! a = init |> divideBy x
+        let! b = a |> divideBy y
+        let! c = b |> divideBy z
+        return c
+        }
+
+let good = divideByWorkflow 12 3 2 1
+let bad = divideByWorkflow 12 3 0 1
+
+
+
+
+type MaybeBuilder2() =
+
+    member this.Bind(x, f) =
+        match x with
+        | false -> None
+        | true  -> f()
+
+    member this.Return(x) = x
+
+    member this.ReturnFrom(x) = x
+    
+    member this.Combine (a,b) =
+        match a with
+        | Some _ -> a   // a succeeds -- use it
+        | None   -> b   // a fails -- use b instead
+    
+    member this.Delay(f) = f()
+
+
+let maybe2 = new MaybeBuilder2()
+
+let canbeplacedatXY() =
+        maybe2
+            {
+            let! a = true
+            let! b = true
+            let allCoordinates = 5
+            let! c = true
+            return! Some "xxx"
+            return! None
+            }
+
+canbeplacedatXY()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 let stopwatch = Stopwatch()

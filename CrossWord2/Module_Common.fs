@@ -94,6 +94,33 @@ let (|NEW_WORD_BLOCK|IN_WORD_BLOCK|MARKER_AFTER_EMPTY_WORD_BLOCK|MARKER_AFTER_WO
 type failed_list = seq<string>
 
 
+type MaybeBuilder() =
+
+    member this.Bind(x, f) =
+        match x with
+        | false -> None
+        | true  -> f()
+
+    member this.Return(x) = x
+
+    member this.ReturnFrom(x) = x
+    
+    member this.Combine (a,b) =
+        match a with
+        | Some _ -> a   // a succeeds -- use it
+        | None   -> b   // a fails -- use b instead
+    
+    member this.Delay(f) = f()
+
+
+
+
+
+
+let maybe = new MaybeBuilder()
+
+
+
 let xy_letter_selection_limit = 5
 let xy_word_selection_limit = xy_letter_selection_limit * 10
 let housekeeping_required = 100

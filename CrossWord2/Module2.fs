@@ -69,30 +69,46 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
     let allCellsAvailable allCoordinates = 
         allCoordinates |> Seq.forall (fun coorAndChar -> isCellAvailable coorAndChar)
 
-    if isCellEmpty (coordinateAdjacentToStartLetter()) then 
+    let canbeplacedatXY() =
+        maybe
+            {
+            let! a = isCellEmpty (coordinateAdjacentToStartLetter())
+            let! b = isCellEmpty (coordinateAdjacentToEndLetter()) 
+            let allCoordinates = allCoordinates() // cached
+            let! c =allCellsAvailable allCoordinates 
+            return! Some( {word=word;
+                           intersection_coordinate=gridCoordinate;
+                           coordinates_of_the_word=Seq.append allCoordinates (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
+                           new_word_direction=lineOfTheWordToBeAdded} )
+            return! None
+            }
 
-       if isCellEmpty (coordinateAdjacentToEndLetter()) then
+    canbeplacedatXY()
 
-          let allCoordinates = allCoordinates() // cached
+    //if isCellEmpty (coordinateAdjacentToStartLetter()) then 
 
-          if allCellsAvailable allCoordinates then
+    //   if isCellEmpty (coordinateAdjacentToEndLetter()) then
 
-             Some( {word=word;
-                    intersection_coordinate=gridCoordinate;
-                    coordinates_of_the_word=Seq.append allCoordinates (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
-                    new_word_direction=lineOfTheWordToBeAdded} )    
+    //      let allCoordinates = allCoordinates() // cached
+
+    //      if allCellsAvailable allCoordinates then
+
+    //         Some( {word=word;
+    //                intersection_coordinate=gridCoordinate;
+    //                coordinates_of_the_word=Seq.append allCoordinates (seq { yield (gridCoordinate,word.[wordsplit.offsetOfIntersectingLetter]) });
+    //                new_word_direction=lineOfTheWordToBeAdded} )    
   
-          else
+    //      else
 
-             None
+    //         None
      
-       else
+    //   else
 
-          None 
+    //      None 
 
-    else
+    //else
 
-       None
+    //   None
 
 
 
