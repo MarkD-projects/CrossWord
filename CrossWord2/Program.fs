@@ -51,7 +51,7 @@ let printCount state =
     lock consoleLock (fun () -> printfn "%A %A " word_to_print_2 availableXYcounter_2)
 
 //let timer  = new Timer(printText,  null, 0, 10000)
-let timer  = new Timer(printText2, null, 0, 10000)
+//let timer  = new Timer(printText2, null, 0, 10000)
 //let timer2 = new Timer(printCount, null, 0, 10000)
 
 // ==================================================
@@ -165,6 +165,9 @@ let collect_the_valid_coordinates_and_select_one_of_them (coordinates:seq<Word_s
 
 let do_dict_updates (for_dictionary_update:For_dictionary_update) =
 
+    let mutable mydebugX = 1
+    let mutable mydebugY = 1
+
     for xy , letter in for_dictionary_update.coordinates_of_the_word do
 
            let found, res = coordinatesDict.TryGetValue xy
@@ -183,6 +186,20 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
                      match found with
                      | true  -> letters.Item(letter) <- res2@[xy] // xy is a new location so can append. If xy was the intersect cell then that xy will all ready have been added.
                      | false -> letters.Add(letter,[xy])
+
+           mydebugX <- xy.X
+           mydebugY <- xy.Y
+
+    if for_dictionary_update.word = "aas"       ||
+       for_dictionary_update.word = "aahing"    ||
+       for_dictionary_update.word = "aasvogels" ||
+       for_dictionary_update.word = "aaliis"    ||
+       for_dictionary_update.word = "aani"      ||
+       for_dictionary_update.word = "aahs" then
+       printBlock2 mydebugX mydebugY  |> Seq.iter(fun line -> writer2.WriteLine(line) )
+       writer2.WriteLine("===============================")
+    else 
+      ()
 
     ()
 
@@ -288,6 +305,7 @@ let main() =
     seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
 #if DEBUG
     update_the_dictionaries  (source_words_2.Tail |> List.take 2000) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
 #else
     update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
 #endif
@@ -298,12 +316,12 @@ let main() =
     let formattedTime = sprintf "%02d:%02d:%02d" elapsed.Hours elapsed.Minutes elapsed.Seconds
     printfn "Elapsed time: %s" formattedTime
 
-    timer.Dispose()  |> ignore
+    //timer.Dispose()  |> ignore
 
   //timer2.Dispose() |> ignore
   //Console.ReadLine() |> ignore
  
-
+    writer2.Close()  // defined as a Let in the Helper module
 
 
 main()

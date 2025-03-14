@@ -48,7 +48,7 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
     // Note using position not offset in the movement calculations
 
     let coordinateAdjacentToStartLetter() = Seq.head (moveToCoordinates gridCoordinate (wordsplit.NumberOflettersBeforeTheIntersectionLetter + 1) lineOfTheWordToBeAdded ToStart)
-    let coordinateAdjacentToEndLetter()   = Seq.head (moveToCoordinates gridCoordinate (wordsplit.NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
+    let coordinateAdjacentToEndLetter()   = Seq.last (moveToCoordinates gridCoordinate (wordsplit.NumberOflettersAfterTheIntersectionLetter  + 1) lineOfTheWordToBeAdded ToEnd  )
 
     let coordinatesStartUpToIntersectingLetter()  = moveToCoordinates gridCoordinate wordsplit.NumberOflettersBeforeTheIntersectionLetter lineOfTheWordToBeAdded ToStart
     let coordinatesAfterIntersectingToEndLetter() = moveToCoordinates gridCoordinate wordsplit.NumberOflettersAfterTheIntersectionLetter  lineOfTheWordToBeAdded ToEnd

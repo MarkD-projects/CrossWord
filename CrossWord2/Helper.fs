@@ -4,6 +4,8 @@ open System.IO
 
 open Module_Common
 
+let writer2 = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "debug_info.txt"))
+
 let helperprintout x y =
 
      let found, res = coordinatesDict.TryGetValue {X=x;Y=y}
@@ -55,6 +57,26 @@ let printBlock() =
                 yield sprintf "%s" return_a_row
         }
 
+let printBlock2 x y =
+
+    let y_top     = y + 12
+    let y_bottom  = y - 12
+    let x_right   = x + 12
+    let x_left    = x - 12
+
+    seq {
+            for y in y_top .. -1 .. y_bottom do
+
+                let row_data = seq { for x in x_left .. x_right do yield (helperprintout x y) }
+
+                let return_a_row = row_data 
+                                   |> Seq.map(fun a -> a.ToString() )
+                                   |> Seq.reduce (fun a b -> a + b)
+
+                yield sprintf "%s" return_a_row
+        }
+
+
 let debug b =
 
    seq { for a in b do
@@ -65,7 +87,7 @@ let debug b =
 let writeGrid_to_file() =
 
 #if DEBUG
-    use writer = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid_BASELINE.txt"))
+    use writer  = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid.txt"))
 #else
     use writer = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "the_grid_txt"))
 #endif
