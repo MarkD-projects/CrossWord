@@ -1,156 +1,38 @@
                          
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-           aa            
-           a             
-           aah           
-            a            
-          aahing         
-            e            
-            d            
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-===============================
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-             aa          
-             a           
-             aah         
-              a          
-            aahing       
-            a e          
-            h d          
-            s            
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-===============================
-                         
-                         
-                         
-                         
-                         
-             aa          
-             a           
-             aah         
-              a          
-            aahing       
-            a e          
-            h d          
-       aaliis            
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-===============================
-                         
-                         
-                         
-                         
-                         
-               aa        
-               a         
-               aah       
-                a        
-            a aahing     
-            a a e        
-            n h d        
-         aaliis          
-         a               
-         l               
-         s               
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-===============================
-                         
-                         
-                         
-                   aaron 
-                   a     
-                 aardvark
-                 a g  a  
-              aarrghh r  
-                 d    d  
-                 w    w  
-              aaronic o  
-              a  l    l  
-            aaru f    v  
-            a o       e  
-            s n       s  
-              i aarrgh   
-              c a        
-              aaronite   
-              l o        
-                n        
-                i        
-                t        
-                i        
-                c        
-                         
-===============================
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-            a            
-        aa  a            
-        a   s            
-        aah v            
-         a  o            
-     a aahing            
-     a a e  e            
-     n h d  l            
-  aaliis    s            
-n a                      
-  l                      
-rks                      
-                         
-                         
-                         
-                         
-                         
-                         
+r                        
+                         
+ f  f                    
+miliarity                
+ b  n                    
+ r  c                    
+ e  i   f                
+ l feasten               
+ e  r   i                
+ s      g                
+ s      n   f            
+       feltlike          
+        d   d            
+myoma   n   f f          
+       feltmaker         
+        s   d n          
+        s     a          
+ f            g          
+tes           l f  f   fe
+ m           fenestellae 
+fictionally   s n  n   n 
+ n              o  r   s 
+ e              u  i  fid
+ting            i  r   v 
+{ word = "fidfad"
+  intersection_coordinate = { X = 4689
+                              Y = -3793 }
+  coordinates_of_the_word =
+   seq
+     [({ X = 4689
+         Y = -3792 }, 'f'); ({ X = 4689
+                               Y = -3794 }, 'd'); ({ X = 4689
+                                                     Y = -3795 }, 'f');
+      ({ X = 4689
+         Y = -3796 }, 'a'); ...]
+  new_word_direction = DOWN }
 ===============================

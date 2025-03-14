@@ -59,10 +59,17 @@ let checkAvailabilityOfRemainingCells (word:string) (wordsplit:WordSplit) (lineO
     let allCoordinates() = Seq.append (coordinatesStartUpToIntersectingLetterAndChar()) (coordinatesAfterIntersectingToEndLetterAndChar())
                            |> Seq.cache
 
+
+// type CellStatus = {cellContent:CellContent ; availableDirection:Direction option}
+
     let isCellAvailable (xy,c) =
 
         match (cellStatus xy c) with                                  
-        |{cellContent=MatchingLetter} -> true   
+        |{cellContent=MatchingLetter; availableDirection=availableDirection} -> match availableDirection with
+                                                                                | Some x when x  = lineOfTheWordToBeAdded  -> true  // e.g. current word is to be placed Across and the intersection letter is part of a Down word. So it's remaining available direction is Across. So the new word can intersect with this right-angled word
+                                                                                | Some x when x  <> lineOfTheWordToBeAdded -> false // e.g. the current word is to be placed Across and the intersection letter is part of an Across word. So it's remaining available direction is Down. So the new word cannot in effect append to this existing word
+                                                                                | None                                     -> false // in practice will not occur. This would be a cell where Across and Down are already in use.
+                                                                                | _                                        -> false // previous three checks cover all possibilities.
         |{cellContent=Empty         } -> no_adjacent_word_to_the_added_letter lineOfTheWordToBeAdded xy
         |_                            -> false
 

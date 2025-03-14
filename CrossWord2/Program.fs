@@ -190,14 +190,11 @@ let do_dict_updates (for_dictionary_update:For_dictionary_update) =
            mydebugX <- xy.X
            mydebugY <- xy.Y
 
-    if for_dictionary_update.word = "aas"       ||
-       for_dictionary_update.word = "aahing"    ||
-       for_dictionary_update.word = "aasvogels" ||
-       for_dictionary_update.word = "aaliis"    ||
-       for_dictionary_update.word = "aani"      ||
-       for_dictionary_update.word = "aahs" then
+    if for_dictionary_update.word = "fidfad" then
        printBlock2 mydebugX mydebugY  |> Seq.iter(fun line -> writer2.WriteLine(line) )
+       writer2.WriteLine(sprintf "%A" for_dictionary_update)
        writer2.WriteLine("===============================")
+       writer2.Flush()
     else 
       ()
 
@@ -304,8 +301,8 @@ let main() =
     
     seed_the_first_word source_words_2.Head ACROSS ({X=0 ; Y=0}) (Some("clear"))
 #if DEBUG
-    update_the_dictionaries  (source_words_2.Tail |> List.take 2000) 0 |> ignore
-    //update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
+    //update_the_dictionaries  (source_words_2.Tail |> List.take 2000) 0 |> ignore
+    update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
 #else
     update_the_dictionaries  (source_words_2.Tail) 0 |> ignore
 #endif
